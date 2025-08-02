@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Split.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Split.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1a7uFeYBQoJf-H9gz-AruV4OspcR1Gk-Z')">Download</button>
+<h1>Version 2:</h1>
+This script is used to execute several actions at once
+<h1>Method names:</h1>
+Activate
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.Reflection;
+
+public class Split : MonoBehaviour
+{
+    [System.Serializable]
+    public class Action
+    {
+        public string actionHeader;
+        public Component actionComponent;
+        public string actionMethod;
+    }
+    [Header("Actions")]
+    public List<Action> actions = new List<Action>();
+    public void Activate()
+    {
+        foreach (var action in actions)
+        {
+            ExecuteAction(action.actionComponent, action.actionMethod);
+        }
+    }
+    private void ExecuteAction(Component component, string methodName)
+    {
+        if (component == null || string.IsNullOrEmpty(methodName))
+        {
+            Debug.LogWarning("Action is missing a target component or method name.");
+            return;
+        }
+        MethodInfo method = component.GetType().GetMethod(methodName);
+        if (method != null)
+        {
+            method.Invoke(component, null);
+        }
+        else
+        {
+            Debug.LogError($"Method '{methodName}' not found on component '{component.GetType().Name}'.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
