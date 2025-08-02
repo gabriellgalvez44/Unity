@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Accelerator.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1eobR9MoSjPDtzhWaTbB74l9mAxu0Ltvu')">Download</button>
+<h1>Version 1:</h1>
+This script is used in a way so you can manually accelerate something, automatically, or based on collision!
+<h1>Method names:</h1>
+Accelerate
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Accelerator : MonoBehaviour
+{
+    [Header("Objects to Accelerate")]
+    public GameObject[] gameObjects;
+    [Header("Acceleration Settings")]
+    public float accelerationX = 0f;
+    public float accelerationY = 0f;
+    public float accelerationZ = 0f;
+    [Header("Zone Settings")]
+    public bool useZone = false;
+    public LayerMask layerMask; 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (useZone)
+        {
+            Rigidbody rb = collision.gameObject.GetComponent<Rigidbody>();
+            if (rb != null && (IsInGameObjectList(collision.gameObject) || IsInLayerMask(collision.gameObject)))
+            {
+                ApplyAcceleration(rb);
+            }
+        }
+    }
+    public void Accelerate()
+    {
+        if (!useZone)
+        {
+            foreach (var obj in gameObjects)
+            {
+                if (obj != null)
+                {
+                    Rigidbody rb = obj.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        ApplyAcceleration(rb);
+                    }
+                }
+            }
+        }
+    }
+    private void ApplyAcceleration(Rigidbody rb)
+    {
+        Vector3 acceleration = new Vector3(accelerationX, accelerationY, accelerationZ);
+        rb.velocity += acceleration;
+    }
+    private bool IsInGameObjectList(GameObject obj)
+    {
+        foreach (var gameObj in gameObjects)
+        {
+            if (gameObj == obj)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    private bool IsInLayerMask(GameObject obj)
+    {
+        return (layerMask.value & (1 << obj.layer)) > 0;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=https://colossal-curly-quality.glitch.me/shorten.css>
+<link rel=stylesheet href=script.css>
+<script src=https://all-in-one-webdev-cli.glitch.me/all.js></script>
+</html>
