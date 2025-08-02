@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>CameraRotator.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1H1lw20c8D353fb4glPSr8IuRl5LtHKV5')">Download</button>
+<h1>Version 10:</h1>
+This script is used to allow the camera to rotate in a 3D space with your mouse
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraRotator : MonoBehaviour
+{
+    [Header("Client & player identifyer")]
+    public bool autoLockCursor = true;
+    public Transform playerBody;
+    [Header("Camera control")]
+    public float mouseSensitivity = 100f;
+    public bool lockDirectVertical = true;
+    public float lockOnDegrees = 90f;
+    [Header("Rotation")]
+    public float cameraX;
+    public float cameraY;
+    [HideInInspector] public bool canRotate = true;
+    private int rep = 25;
+    [Header("Interval rotation")]
+    public bool useInterval = false;
+    public float interval = 45f;
+    public float speed = 0.25f;
+    private bool isChildOfPlayer;
+    private void Start()
+    {
+        mouseSensitivity *= 2f;
+        speed *= 10;
+        if (autoLockCursor)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        if (playerBody != null)
+        {
+            Transform parent = transform.parent;
+            while (parent != null)
+            {
+                if (parent == playerBody)
+                {
+                    isChildOfPlayer = true;
+                    break;
+                }
+                parent = parent.parent;
+            }
+        }
+    }
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        if (Input.GetMouseButtonDown(0))
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        if (rep > 0)
+        {
+            rep--;
+            mouseX = 0;
+            mouseY = 0;
+        }
+        if (canRotate)
+        {
+            cameraX += mouseX;
+            cameraY -= mouseY;
+        }
+        if (lockDirectVertical)
+        {
+            cameraY = Mathf.Clamp(cameraY, -lockOnDegrees, lockOnDegrees);
+        }
+        if (isChildOfPlayer)
+        {
+            transform.localRotation = Quaternion.Euler(cameraY, cameraX - playerBody.eulerAngles.y, 0f);
+        }
+        else
+        {
+            transform.localRotation = Quaternion.Euler(cameraY, cameraX, 0f);
+        }
+    }
+    private void FixedUpdate()
+    {
+        if (useInterval && playerBody != null)
+        {
+            float cameraYaw = cameraX;
+            float bodyYaw = playerBody.eulerAngles.y;
+            float yawDifference = Mathf.DeltaAngle(bodyYaw, cameraYaw);
+            if (Mathf.Abs(yawDifference) >= interval)
+            {
+                float targetYaw = Mathf.MoveTowardsAngle(bodyYaw, cameraYaw, speed * 100f * Time.deltaTime);
+                playerBody.rotation = Quaternion.Euler(0f, targetYaw, 0f);
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
