@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Audio.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1zySGgQbYRIc9EZXm8947tv_STgtHkVyV')">Download</button>
+<h1>Version 4:</h1>
+This script is used for SFX and Background Music OST!
+<h1>Method names:</h1>
+Play<br>
+Stop
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Audio;
+
+public class Audio : MonoBehaviour
+{
+    [Header("Audio Settings")]
+    public List<AudioSettings> audioSettingsList;
+    [Range(0f, 100f)] public float volume = 1.0f;
+    public float distance = 10f;
+    [Header("Playback Options")]
+    public bool playOnStart = false;
+    public bool playAll = false;
+    public bool cycle = false;
+    public bool cycleNew = false;
+    public bool individualLoop = false;
+    public float startingAudioDelay = 0f;
+    public GameObject[] playbackObjects;
+    [Header("Cycling Options")]
+    public float minDelay = 0f;
+    public float maxDelay = 0f;
+    private List<AudioSource> activeAudioSources = new List<AudioSource>();
+    private Coroutine playMusicCoroutine;
+    private AudioClip lastPlayedClip;
+    private void Start()
+    {
+        if (playOnStart)
+        {
+            StartCoroutine(PlayWithDelay());
+        }
+    }
+    private IEnumerator PlayWithDelay()
+    {
+        yield return new WaitForSeconds(startingAudioDelay);
+        Play();
+    }
+    public void Play()
+    {
+        if (audioSettingsList.Count > 0)
+        {
+            if (playAll && !cycle)
+            {
+                foreach (var audioSetting in audioSettingsList)
+                {
+                    AudioSource newAudioSource = gameObject.AddComponent<AudioSource>();
+                    newAudioSource.clip = audioSetting.clip;
+                    newAudioSource.loop = individualLoop;
+                    newAudioSource.spatialBlend = audioSetting.allow3D ? 1.0f : 0.0f;
+                    newAudioSource.volume = Mathf.Clamp(volume / 10f, 0f, 1f);
+                    newAudioSource.reverbZoneMix = audioSetting.reverb ? 1.1f : 0f;
+                    newAudioSource.pitch = GetPitch(audioSetting.speed);
+                    newAudioSource.Play();
+                    activeAudioSources.Add(newAudioSource);
+                    StartCoroutine(DestroyAudioSourceWhenFinished(newAudioSource));
+                }
+            }
+            else
+            {
+                AudioSettings selectedAudio = GetRandomAudioSettings();
+                AudioSource newAudioSource = gameObject.AddComponent<AudioSource>();
+                newAudioSource.clip = selectedAudio.clip;
+                newAudioSource.loop = individualLoop;
+                newAudioSource.spatialBlend = selectedAudio.allow3D ? 1.0f : 0.0f;
+                newAudioSource.volume = Mathf.Clamp(volume / 10f, 0f, 1f);
+                newAudioSource.reverbZoneMix = selectedAudio.reverb ? 1.1f : 0f;
+                newAudioSource.pitch = GetPitch(selectedAudio.speed);
+                newAudioSource.Play();
+                activeAudioSources.Add(newAudioSource);
+                StartCoroutine(DestroyAudioSourceWhenFinished(newAudioSource));
+                if (cycle && playMusicCoroutine == null)
+                {
+                    playMusicCoroutine = StartCoroutine(PlayMusicWithDelay());
+                }
+            }
+        }
+    }
+    private float GetPitch(SpeedOption speed)
+    {
+        switch (speed)
+        {
+            case SpeedOption.Slowed:
+                return 0.87f;
+            case SpeedOption.Fast:
+                return 1.13f;
+            default:
+                return 1.0f;
+        }
+    }
+    private AudioSettings GetRandomAudioSettings()
+    {
+        if (cycleNew && audioSettingsList.Count > 1)
+        {
+            AudioSettings newAudio;
+            do
+            {
+                newAudio = audioSettingsList[Random.Range(0, audioSettingsList.Count)];
+            }
+            while (newAudio.clip == lastPlayedClip);
+            lastPlayedClip = newAudio.clip;
+            return newAudio;
+        }
+        else
+        {
+            return audioSettingsList[Random.Range(0, audioSettingsList.Count)];
+        }
+    }
+    private IEnumerator PlayMusicWithDelay()
+    {
+        while (cycle)
+        {
+            if (activeAudioSources.Count > 0 && activeAudioSources[0] != null)
+            {
+                AudioSource currentAudioSource = activeAudioSources[0];
+                float adjustedLength = currentAudioSource.clip.length / Mathf.Abs(currentAudioSource.pitch);
+                yield return new WaitForSeconds(adjustedLength);
+            }
+            else
+            {
+                yield return null;
+            }
+            float delay = Random.Range(minDelay, maxDelay);
+            yield return new WaitForSeconds(delay);
+            Play();
+        }
+    }
+    private IEnumerator DestroyAudioSourceWhenFinished(AudioSource audioSource)
+    {
+        yield return new WaitUntil(() => !audioSource.isPlaying && !audioSource.loop);
+        activeAudioSources.Remove(audioSource);
+        Destroy(audioSource);
+    }
+    [System.Serializable]
+    public struct AudioSettings
+    {
+        public AudioClip clip;
+        public SpeedOption speed;
+        public bool allow3D;
+        public bool reverb;
+    }
+    public enum SpeedOption
+    {
+        Slowed,
+        Normal,
+        Fast
+    }
+    public void Stop()
+    {
+        for (int i = activeAudioSources.Count - 1; i >= 0; i--)
+        {
+            if (activeAudioSources[i] != null)
+            {
+                Destroy(activeAudioSources[i]);
+            }
+            activeAudioSources.RemoveAt(i);
+        }
+        if (playMusicCoroutine != null)
+        {
+            StopCoroutine(playMusicCoroutine);
+            playMusicCoroutine = null;
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=https://colossal-curly-quality.glitch.me/shorten.css>
+<link rel=stylesheet href=script.css>
+<script src=https://all-in-one-webdev-cli.glitch.me/all.js></script>
+</html>
