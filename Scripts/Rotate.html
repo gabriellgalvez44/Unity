@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Rotate.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Rotate.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=11V31p7MWpN-nipa9LI1GzHRz2qCCHtBv')">Download</button>
+<h1>Version 1:</h1>
+This script is used to rotate objects when they collide with the object that uses this script
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Rotate : MonoBehaviour
+{
+    [Header("Rotation Settings")]
+    public List<GameObject> objectsToRotate;
+    public Axis rotationAxis = Axis.X;
+    public bool smoothRotate = false;
+    public float rotationAmount = 90f;
+    public float rotationSpeed = 2f;
+    private HashSet<GameObject> currentlyColliding = new HashSet<GameObject>();
+    public enum Axis
+    {
+        X,
+        Y,
+        Z
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (objectsToRotate.Contains(other.gameObject) && !currentlyColliding.Contains(other.gameObject))
+        {
+            currentlyColliding.Add(other.gameObject);
+            RotateObject(other.gameObject);
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (currentlyColliding.Contains(other.gameObject))
+        {
+            currentlyColliding.Remove(other.gameObject);
+        }
+    }
+    private void RotateObject(GameObject obj)
+    {
+        Vector3 rotationVector = rotationAxis switch
+        {
+            Axis.X => Vector3.right,
+            Axis.Y => Vector3.up,
+            Axis.Z => Vector3.forward,
+            _ => Vector3.zero
+        };
+
+        if (smoothRotate)
+        {
+            StartCoroutine(SmoothRotation(obj, rotationVector * rotationAmount));
+        }
+        else
+        {
+            obj.transform.Rotate(rotationVector * rotationAmount, Space.Self);
+        }
+    }
+    private IEnumerator SmoothRotation(GameObject obj, Vector3 targetRotation)
+    {
+        Quaternion startRotation = obj.transform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(targetRotation);
+        float elapsedTime = 0f;
+
+        while (elapsedTime < 1f)
+        {
+            obj.transform.rotation = Quaternion.Slerp(startRotation, endRotation, elapsedTime);
+            elapsedTime += Time.deltaTime * rotationSpeed;
+            yield return null;
+        }
+        obj.transform.rotation = endRotation;
+    }
+} </textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
