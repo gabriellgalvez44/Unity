@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - PhysicsManager.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>PhysicsManager.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1S_pcSDrfNAdaXAemappNiyY8clvuvuH5')">Download</button>
+<h1>Version 3:</h1>
+This script is used to make objects move within a pathway (Sequence of pin points)
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PhysicsManager : MonoBehaviour
+{
+    public bool isBouncy = false;
+    public float bounceForce = 0.5f;
+    public LayerMask bounceIgnoreLayer;
+    private Rigidbody rb;
+    [Header("On Collision Start")]
+    public MonoBehaviour onCollisionStartComponent;
+    public string onCollisionStartMethod;
+    [Header("On Collision End")]
+    public MonoBehaviour onCollisionEndComponent;
+    public string onCollisionEndMethod;
+    [Header("Ignore")]
+    public GameObject[] ignoreObjects;
+    public LayerMask ignoreLayers;
+    private HashSet<Collider> currentlyColliding = new HashSet<Collider>();
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (IsObjectInIgnoreList(collision.gameObject) || IsLayerInIgnoreList(collision.gameObject.layer))
+            return;
+        if (!currentlyColliding.Contains(collision.collider))
+        {
+            currentlyColliding.Add(collision.collider);
+            if (onCollisionStartComponent != null && !string.IsNullOrEmpty(onCollisionStartMethod))
+            {
+                onCollisionStartComponent.SendMessage(onCollisionStartMethod, collision, SendMessageOptions.DontRequireReceiver);
+            }
+        }
+        if ((bounceIgnoreLayer.value & (1 << collision.gameObject.layer)) != 0)
+            return;
+        foreach (ContactPoint contact in collision.contacts)
+        {
+            Vector3 normal = contact.normal;
+            if (normal.y > 0) 
+            {
+                rb.AddForce(Vector3.up * rb.velocity.magnitude * bounceForce, ForceMode.Impulse);
+            }
+            else if (normal.y < 0) 
+            {
+                rb.AddForce(Vector3.down * rb.velocity.magnitude * bounceForce, ForceMode.Impulse);
+            }
+            else 
+            {
+                rb.AddForce(normal * -rb.velocity.magnitude * bounceForce, ForceMode.Impulse);
+            }
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (IsObjectInIgnoreList(collision.gameObject) || IsLayerInIgnoreList(collision.gameObject.layer))
+            return;
+        currentlyColliding.Remove(collision.collider);
+        if (currentlyColliding.Count == 0)
+        {
+            if (onCollisionEndComponent != null && !string.IsNullOrEmpty(onCollisionEndMethod))
+            {
+                onCollisionEndComponent.SendMessage(onCollisionEndMethod, collision, SendMessageOptions.DontRequireReceiver);
+            }
+        }
+    }
+    private bool IsObjectInIgnoreList(GameObject obj)
+    {
+        foreach (GameObject ignoreObj in ignoreObjects)
+        {
+            if (ignoreObj == obj)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    private bool IsLayerInIgnoreList(int layer)
+    {
+        return (ignoreLayers.value & (1 << layer)) != 0;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
