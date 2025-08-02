@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - ObjectManagement.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>ObjectManagement.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1QbjZNe_MhJmNCL60V0spGwnoEJHG7QLJ')">Download</button>
+<h1>Version 3:</h1>
+This script is used to make objects inactive, active, deleted, and/or override other things of the object
+<h1>Method names:</h1>
+Manage
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ObjectManagement : MonoBehaviour
+{
+    [System.Serializable]
+    public class ObjectSettings
+    {
+        public GameObject objectToManage;
+        public Presence presence;
+        public Material material;
+        public Vector3 targetPosition;
+    }
+    public enum Presence
+    {
+        DontOverride,
+        Inactive,
+        Active,
+        Delete,
+        SetPosition
+    }
+    public ObjectSettings[] objectSettings;
+    public void Manage()
+    {
+        foreach (var settings in objectSettings)
+        {
+            if (settings.objectToManage != null)
+            {
+                switch (settings.presence)
+                {
+                    case Presence.DontOverride:
+                        break;
+                    case Presence.Inactive:
+                        settings.objectToManage.SetActive(false);
+                        break;
+                    case Presence.Active:
+                        settings.objectToManage.SetActive(true);
+                        break;
+                    case Presence.Delete:
+                        Destroy(settings.objectToManage);
+                        break;
+                    case Presence.SetPosition:
+                        settings.objectToManage.transform.localPosition = settings.targetPosition;
+                        break;
+                }
+                if (settings.material != null)
+                {
+                    Renderer renderer = settings.objectToManage.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        renderer.material = settings.material;
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Object to manage is not assigned.");
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
