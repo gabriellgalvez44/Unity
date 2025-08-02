@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Teleport.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Teleport.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Ew0oCL98EAE1gZ2Z-5R10-bSw_Ta6Ug0')">Download</button>
+<h1>Version 4:</h1>
+This script is used to teleport objects to another object
+<h1>Method names:</h1>
+TP
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Teleport : MonoBehaviour
+{
+    [Header("Teleport Settings")]
+    public GameObject[] targetObjects;
+    public GameObject placeObject;
+    public bool matchRotation = false;
+    [Header("On teleported action")]
+    public MonoBehaviour onTeleportedComponent;
+    public string onTeleportedMethod;
+    public void TP()
+    {
+        if (targetObjects.Length > 0 && placeObject != null)
+        {
+            foreach (var target in targetObjects)
+            {
+                if (target != null)
+                {
+                    target.transform.position = placeObject.transform.position;
+                    if (matchRotation)
+                    {
+                        target.transform.rotation = placeObject.transform.rotation;
+                    }
+                }
+            }
+            InvokeMethod(onTeleportedComponent, onTeleportedMethod);
+        }
+        else
+        {
+            Debug.LogWarning("Target objects or place object is not set.");
+        }
+    }
+    private void InvokeMethod(MonoBehaviour component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            component.Invoke(methodName, 0f);
+            Debug.Log("Invoked method: " + methodName);
+        }
+        else
+        {
+            Debug.LogWarning("Component or method name is invalid for invocation.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
