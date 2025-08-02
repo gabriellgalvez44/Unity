@@ -1,0 +1,19 @@
+html, body, button, textarea {
+color: lime;
+}
+h1 {
+cursor: default;
+}
+button {
+border: 1px solid lime;
+border-radius: 11px;
+background: none;
+}
+textarea {
+width: 40vw;
+height: 75vh;
+resize: none;
+border: 1px solid lime;
+outline: none;
+background: none;
+}
