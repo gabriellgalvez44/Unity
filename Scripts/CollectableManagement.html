@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - CollectableManagement.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>CollectableManagement.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1__DExJqB_riKsaSRs6MvLNg3coRnNBaZ')">Download</button>
+<h1>Version 1:</h1>
+This script is used to work with the <a href=Collectables.html>Collectables.cs</a> script where it allows the object you chose to be interactable, and if so, what item number does it activate from the <a href=Collectables.html>Collectables.cs</a> script
+<h1>Method names:</h1>
+CollectItem<br>
+DropItem
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CollectableManagement : MonoBehaviour
+{
+    public Collectables collectables;
+    public int itemNumber;
+    public void CollectItem()
+    {
+        if (collectables != null)
+        {
+            collectables.Pickup(itemNumber);
+            Debug.Log("Item " + itemNumber + " collected.");
+        }
+        else
+        {
+            Debug.LogWarning("Collectables component is not assigned.");
+        }
+    }
+    public void DropItem()
+    {
+        if (collectables != null)
+        {
+            collectables.Drop(itemNumber);
+            Debug.Log("Item " + itemNumber + " dropped.");
+        }
+        else
+        {
+            Debug.LogWarning("Collectables component is not assigned.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
