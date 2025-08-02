@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - ComponentManager.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>ComponentManager.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=17YBLFn3yhpT-v8rHD8Wrl6-_k9BG2Kgv')">Download</button>
+<h1>Version 1:</h1>
+This script is used to disable/enable components, and/or disable/enable their keybinding controls
+<h1>Method names:</h1>
+Manage
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ComponentManager : MonoBehaviour
+{
+    [System.Serializable]
+    public class Components
+    {
+        public MonoBehaviour component;
+        public Action action;
+    }
+    public enum Action
+    {
+        Disable,
+        Enable,
+        Pause,
+        Unpause,
+        Delete
+    }
+    [Header("Component Actions")]
+    public Components[] components;
+    public void Manage()
+    {
+        foreach (var item in components)
+        {
+            if (item.component != null)
+            {
+                switch (item.action)
+                {
+                    case Action.Disable:
+                        DisableComponent(item.component);
+                        break;
+                    case Action.Enable:
+                        EnableComponent(item.component);
+                        break;
+                    case Action.Pause:
+                        PauseComponent(item.component);
+                        break;
+                    case Action.Unpause:
+                        UnpauseComponent(item.component);
+                        break;
+                    case Action.Delete:
+                        DeleteComponent(item.component);
+                        break;
+                }
+            }
+        }
+    }
+    private void DisableComponent(MonoBehaviour component)
+    {
+        component.enabled = false;
+        Debug.Log($"Disabled component: {component.name}");
+    }
+    private void EnableComponent(MonoBehaviour component)
+    {
+        component.enabled = true;
+        Debug.Log($"Enabled component: {component.name}");
+    }
+    private void PauseComponent(MonoBehaviour component)
+    {
+        if (component is IPausable pausable)
+        {
+            pausable.Pause();
+            Debug.Log($"Paused component: {component.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"Component {component.name} does not implement IPausable.");
+        }
+    }
+    private void UnpauseComponent(MonoBehaviour component)
+    {
+        if (component is IPausable pausable)
+        {
+            pausable.Unpause();
+            Debug.Log($"Unpaused component: {component.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"Component {component.name} does not implement IPausable.");
+        }
+    }
+    private void DeleteComponent(MonoBehaviour component)
+    {
+        Destroy(component);
+        Debug.Log($"Deleted component: {component.name}");
+    }
+}
+public interface IPausable
+{
+    void Pause();
+    void Unpause();
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
