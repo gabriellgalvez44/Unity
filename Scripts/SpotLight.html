@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - SpotLight.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>SpotLight.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1OLnDEVhTEwOibxgakJ67qDXCSOcnCwAH')">Download</button>
+<h1>Version 1:</h1>
+This script is used to add dimming and/or flickering to point lights for immersion and/or detail
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(Light))]
+public class SpotLight : MonoBehaviour
+{
+    [Header("Main Settings")]
+    public float spread = 30f;
+    public float distance = 10f;
+    [Header("Flicker Settings")]
+    public bool useFlicker = false;
+    public float randomMin = 0.1f;
+    public float randomMax = 0.5f;
+    public float flickerTime = 0.1f;
+    [Header("Dimming Settings")]
+    public bool useDimming = false;
+    public float dimmingTime = 2f;
+    public float lowestDimIntensity = 0.3f;
+    private Light spotLight;
+    private float originalIntensity;
+    private float flickerTimer = 0f;
+    private float nextFlickerDelay = 0f;
+    private bool isFlickering = false;
+    private float dimmingTimer = 0f;
+    private bool dimmingDown = true;
+    void Start()
+    {
+        spotLight = GetComponent<Light>();
+        if (spotLight.type != LightType.Spot)
+        {
+            Debug.LogWarning("SpotLight script is intended for Spot lights only. Changing Light type to Spot.");
+            spotLight.type = LightType.Spot;
+        }
+        originalIntensity = spotLight.intensity;
+        ApplyBaseSettings();
+        if (useFlicker)
+        {
+            nextFlickerDelay = Random.Range(randomMin, randomMax);
+        }
+    }
+    void Update()
+    {
+        ApplyBaseSettings();
+        if (useFlicker)
+            HandleFlicker();
+        if (useDimming)
+            HandleDimming();
+    }
+    void ApplyBaseSettings()
+    {
+        spotLight.spotAngle = spread;
+        spotLight.range = distance;
+    }
+    void HandleFlicker()
+    {
+        flickerTimer += Time.deltaTime;
+        if (!isFlickering && flickerTimer >= nextFlickerDelay)
+        {
+            spotLight.intensity = 0f;
+            isFlickering = true;
+            flickerTimer = 0f;
+        }
+        else if (isFlickering && flickerTimer >= flickerTime)
+        {
+            spotLight.intensity = originalIntensity;
+            isFlickering = false;
+            flickerTimer = 0f;
+            nextFlickerDelay = Random.Range(randomMin, randomMax);
+        }
+    }
+    void HandleDimming()
+    {
+        if (isFlickering) return;
+        dimmingTimer += Time.deltaTime;
+        float t = dimmingTimer / dimmingTime;
+        if (dimmingDown)
+        {
+            spotLight.intensity = Mathf.Lerp(originalIntensity, lowestDimIntensity, t);
+            if (t >= 1f)
+            {
+                dimmingDown = false;
+                dimmingTimer = 0f;
+            }
+        }
+        else
+        {
+            spotLight.intensity = Mathf.Lerp(lowestDimIntensity, originalIntensity, t);
+            if (t >= 1f)
+            {
+                dimmingDown = true;
+                dimmingTimer = 0f;
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
