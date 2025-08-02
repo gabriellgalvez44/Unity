@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - TimeOfDay.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>TimeOfDay.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1BpFVyec7t3qB_l8vjkQY-Vr1Q0AXrs-f')">Download</button>
+<h1>Version 1:</h1>
+This script is used to add dimming and/or flickering to point lights for immersion and/or detail
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TimeOfDay : MonoBehaviour
+{
+    [Header("Time Settings")]
+    public string startingTime = "12:00 AM";
+    public float dayLength = 200f;
+    public string currentTime;
+    public bool matchDeviceTime = false;
+    [Header("Directional Light")]
+    public Light directionalLight;
+    public int lightYRotation = 0;
+    [Header("Skybox Control")]
+    public Material skyboxMaterial;
+    public bool invertTimes = false;
+    public bool flipSkybox = false;
+    public float maxLightIntensity = 1f;
+    public float minLightIntensity = 0f;
+    private float timeOfDayInMinutes;
+    private float timeSpeed;
+    void Start()
+    {
+        if (string.IsNullOrWhiteSpace(startingTime))
+            startingTime = "12:00 AM";
+        if (!matchDeviceTime)
+        {
+            timeOfDayInMinutes = ConvertTo24HourMinutes(startingTime);
+            timeSpeed = 1440f / dayLength;
+        }
+        if (skyboxMaterial != null)
+            RenderSettings.skybox = skyboxMaterial;
+        UpdateLightingAndSkybox(GetNormalizedTime());
+    }
+    void Update()
+    {
+        if (matchDeviceTime)
+        {
+            DateTime now = DateTime.Now;
+            timeOfDayInMinutes = now.Hour * 60 + now.Minute + now.Second / 60f;
+        }
+        else
+        {
+            timeOfDayInMinutes += Time.deltaTime * timeSpeed;
+            if (timeOfDayInMinutes >= 1440f)
+                timeOfDayInMinutes -= 1440f;
+        }
+        currentTime = ConvertTo12HourFormat((int)timeOfDayInMinutes);
+        float normalizedTime = GetNormalizedTime();
+        UpdateLightingAndSkybox(normalizedTime);
+    }
+    float GetNormalizedTime()
+    {
+        return timeOfDayInMinutes / 1440f;
+    }
+    void UpdateLightingAndSkybox(float normalizedTime)
+    {
+        float baseBrightness = Mathf.Cos(normalizedTime * Mathf.PI * 2f) * 0.5f + 0.5f;
+        float lightBrightness = invertTimes ? 1f - baseBrightness : baseBrightness;
+        float skyboxBrightness = flipSkybox ? 1f - baseBrightness : baseBrightness;
+        if (skyboxMaterial != null)
+        {
+            if (skyboxMaterial.HasProperty("_Exposure"))
+                skyboxMaterial.SetFloat("_Exposure", skyboxBrightness);
+            else if (skyboxMaterial.HasProperty("_Tint"))
+                skyboxMaterial.SetColor("_Tint", Color.white * skyboxBrightness);
+            RenderSettings.skybox = skyboxMaterial;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = Color.white * lightBrightness;
+        }
+        if (directionalLight != null)
+        {
+            float xRotation = 90f + (normalizedTime * 360f);
+            directionalLight.transform.rotation = Quaternion.Euler(xRotation, lightYRotation, 0f);
+            float lightIntensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, lightBrightness);
+            directionalLight.intensity = lightIntensity;
+        }
+    }
+    float ConvertTo24HourMinutes(string time)
+    {
+        if (DateTime.TryParse(time, out DateTime dt))
+            return dt.Hour * 60 + dt.Minute;
+        else
+        {
+            Debug.LogWarning("Invalid starting time format. Defaulting to 12:00 AM.");
+            return 0f;
+        }
+    }
+    string ConvertTo12HourFormat(int totalMinutes)
+    {
+        int hour = totalMinutes / 60;
+        int minute = totalMinutes % 60;
+        string suffix = hour >= 12 ? "PM" : "AM";
+        hour = hour % 12;
+        if (hour == 0) hour = 12;
+        return $"{hour:00}:{minute:00} {suffix}";
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
