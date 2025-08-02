@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - IsWatching.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>IsWatching.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1djGXUA8m68EWnYmLJ82SIwTZm2HFPCZY')">Download</button>
+<h1>Version 1:</h1>
+This script is sued to detect if a camera is watching the object that holds this script!
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IsWatching : MonoBehaviour
+{
+    [Header("Camera Settings")]
+    public Camera targetCamera;
+    [Header("Looking Away")]
+    public bool enableLookAway = false;
+    public bool loopLookAway = false;
+    public MonoBehaviour lookAwayComponent;
+    public string lookAwayMethodName;
+    [Header("Looking At")]
+    public bool enableLookAt = false;
+    public bool loopLookAt = false;
+    public MonoBehaviour lookAtComponent;
+    public string lookAtMethodName;
+    private Renderer objectRenderer;
+    private bool wasPreviouslyVisible = false;
+    private void Start()
+    {
+        objectRenderer = GetComponent<Renderer>();
+        if (targetCamera == null)
+        {
+            targetCamera = Camera.main;
+        }
+    }
+    void Watching()
+    {
+        if (objectRenderer == null || targetCamera == null) return;
+        bool isVisible = IsVisibleToCamera();
+        if (enableLookAway && !isVisible)
+        {
+            HandleLookAway();
+        }
+        if (enableLookAt && isVisible)
+        {
+            HandleLookAt();
+        }
+        wasPreviouslyVisible = isVisible;
+    }
+    private bool IsVisibleToCamera()
+    {
+        Bounds bounds = objectRenderer.bounds;
+        Plane[] cameraPlanes = GeometryUtility.CalculateFrustumPlanes(targetCamera);
+        if (GeometryUtility.TestPlanesAABB(cameraPlanes, bounds))
+        {
+            Vector3 objectPosition = objectRenderer.bounds.center;
+            Vector3 viewportPoint = targetCamera.WorldToViewportPoint(objectPosition);
+            return viewportPoint.z > 0 &&
+                   viewportPoint.x >= 0 && viewportPoint.x <= 1 &&
+                   viewportPoint.y >= 0 && viewportPoint.y <= 1;
+        }
+        return false;
+    }
+    private void HandleLookAway()
+    {
+        if (loopLookAway || wasPreviouslyVisible)
+        {
+            if (lookAwayComponent != null && !string.IsNullOrEmpty(lookAwayMethodName))
+            {
+                lookAwayComponent.Invoke(lookAwayMethodName, 0f);
+            }
+        }
+    }
+    private void HandleLookAt()
+    {
+        if (loopLookAt || !wasPreviouslyVisible)
+        {
+            if (lookAtComponent != null && !string.IsNullOrEmpty(lookAtMethodName))
+            {
+                lookAtComponent.Invoke(lookAtMethodName, 0f);
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
