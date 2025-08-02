@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Checkpoint.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1nGKywXS10OdKaWzDMSFqiW5ZS6_VuSs-')">Download</button>
+<h1>Version 2:</h1>
+This script is used to set checkpoints for an object, and teleport the object to the checkpoint
+<h1>Method names:</h1>
+Set<br>
+Retrieve
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Checkpoint : MonoBehaviour
+{
+    [Header("Checkpoint Object")]
+    public GameObject checkpointObject;
+    private Vector3 checkpointPosition;
+    private Quaternion checkpointRotation;
+    public void Set()
+    {
+        if (checkpointObject != null)
+        {
+            checkpointPosition = checkpointObject.transform.position;
+            checkpointRotation = checkpointObject.transform.rotation;
+            Debug.Log("Checkpoint set at: " + checkpointPosition);
+        }
+    }
+    public void Retrieve()
+    {
+        if (checkpointObject != null)
+        {
+            checkpointObject.transform.position = checkpointPosition;
+            checkpointObject.transform.rotation = checkpointRotation;
+            Debug.Log("Returned to checkpoint at: " + checkpointPosition);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
