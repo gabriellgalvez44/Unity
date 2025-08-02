@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - StatOverrider.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>StatOverrider.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1L3gOaOpYeg1C88nwFINZRcneglCEFdEd')">Download</button>
+<h1>Version 1:</h1>
+This script allows you to override stat values wether its set, or change by!
+<h1>Method names:</h1>
+Override
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum OverrideMode
+{
+    Set,
+    ChangeBy
+}
+[System.Serializable]
+public class StatOverride
+{
+    public string statName;
+    public bool overrideStat = false;
+    public OverrideMode overrideMode = OverrideMode.Set;
+    public int intValue;
+    public float floatValue;
+    public string stringValue;
+}
+public class StatOverrider : MonoBehaviour
+{
+    public GameObject targetObject;
+    private StatCreator targetStatCreator;
+    public StatOverride[] overrides;
+    void OnValidate()
+    {
+        if (targetObject != null)
+        {
+            targetStatCreator = targetObject.GetComponent<StatCreator>();
+
+            if (targetStatCreator != null)
+            {
+                if (overrides == null || overrides.Length != targetStatCreator.stats.Length)
+                {
+                    overrides = new StatOverride[targetStatCreator.stats.Length];
+                    for (int i = 0; i < overrides.Length; i++)
+                    {
+                        overrides[i] = new StatOverride();
+                        overrides[i].statName = targetStatCreator.stats[i].statName;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < overrides.Length; i++)
+                    {
+                        if (i < targetStatCreator.stats.Length)
+                            overrides[i].statName = targetStatCreator.stats[i].statName;
+                    }
+                }
+            }
+            else
+            {
+                overrides = null;
+            }
+        }
+        else
+        {
+            overrides = null;
+            targetStatCreator = null;
+        }
+    }
+    public void Override()
+    {
+        if (targetStatCreator == null)
+        {
+            Debug.LogWarning("No StatCreator found on the target object!");
+            return;
+        }
+        for (int i = 0; i < overrides.Length; i++)
+        {
+            var statOverride = overrides[i];
+            if (!statOverride.overrideStat) continue;
+            var stat = System.Array.Find(targetStatCreator.stats, s => s.statName == statOverride.statName);
+            if (stat == null)
+            {
+                Debug.LogWarning($"Stat {statOverride.statName} not found in target StatCreator.");
+                continue;
+            }
+            switch (stat.statType)
+            {
+                case StatType.Int:
+                    if (statOverride.overrideMode == OverrideMode.Set)
+                    {
+                        stat.intValue = statOverride.intValue;
+                    }
+                    else if (statOverride.overrideMode == OverrideMode.ChangeBy)
+                    {
+                        stat.intValue += statOverride.intValue;
+                    }
+                    break;
+                case StatType.Float:
+                    if (statOverride.overrideMode == OverrideMode.Set)
+                    {
+                        stat.floatValue = statOverride.floatValue;
+                    }
+                    else if (statOverride.overrideMode == OverrideMode.ChangeBy)
+                    {
+                        stat.floatValue += statOverride.floatValue;
+                    }
+                    break;
+                case StatType.String:
+                    stat.stringValue = statOverride.stringValue;
+                    break;
+            }
+            stat.ClampValue();
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
