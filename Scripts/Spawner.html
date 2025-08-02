@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Spawner.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Spawner.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1zar6c3Qu0hmjaFu6B4iD13AlOl5EISdg')">Download</button>
+<h1>Version 2:</h1>
+This script is used to spawn object prefabs and/or apply acceleration on spawn
+<h1>Method names:</h1>
+Spawn<br>
+StartLoop<br>
+StopLoop<br>
+Reset
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Spawner : MonoBehaviour
+{
+    [Header("Objects to Spawn")]
+    public GameObject[] objects;
+    public bool randomlyPick = false;
+    [Header("Looping Settings")]
+    public bool isLoop = false;
+    public bool autoStartLoop = false;
+    public bool useRandomLoopDelay = false;
+    public float loopDelay = 1f;
+    public float minLoopDelay = 0.5f;
+    public float maxLoopDelay = 2f;
+    [Header("Spawning Settings")]
+    public GameObject[] spawnAt;
+    public float xAcceleration = 0f;
+    public float yAcceleration = 0f;
+    public float zAcceleration = 0f;
+    public float spawnDelay = 0f;
+    private float nextSpawnTime = 0f;
+    private float nextFailTime = 0f;
+    [Header("Max Shots")]
+    public bool isLimited = false;
+    public int amount = 10;
+    private int remainingShots;
+    private bool hasTriggeredOnEmpty = false;
+    [Header("On Spawn")]
+    public Component onSpawnComponent;
+    public string onSpawnMethod;
+    [Header("On Spawn Fail")]
+    public Component onSpawnFailComponent;
+    public string onSpawnFailMethod;
+    [Header("On Empty")]
+    public Component onEmptyComponent;
+    public string onEmptyMethod;
+    [Header("On Reset")]
+    public Component onResetComponent;
+    public string onResetMethod;
+    [Header("On Reset Fail")]
+    public Component onResetFailComponent;
+    public string onResetFailMethod;
+    private Coroutine loopCoroutine;
+    private void Start()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        remainingShots = amount;
+        hasTriggeredOnEmpty = false;
+        nextSpawnTime = Time.time;
+        nextFailTime = Time.time;
+        if (autoStartLoop && isLoop)
+        {
+            StartLoop();
+        }
+    }
+    public void Spawn()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (Time.time < nextSpawnTime)
+        {
+            return;
+        }
+        if (isLimited && remainingShots <= 0)
+        {
+            Debug.LogWarning("No remaining shots to spawn!");
+            TriggerOnSpawnFail();
+            return;
+        }
+        if (objects.Length == 0 || spawnAt.Length == 0)
+        {
+            Debug.LogWarning("No objects to spawn or spawn locations are missing!");
+            TriggerOnSpawnFail();
+            return;
+        }
+        if (randomlyPick)
+        {
+            GameObject obj = objects[Random.Range(0, objects.Length)];
+            GameObject location = spawnAt[Random.Range(0, spawnAt.Length)];
+            SpawnObject(obj, location);
+        }
+        else
+        {
+            foreach (GameObject obj in objects)
+            {
+                if (obj != null)
+                {
+                    GameObject location = spawnAt[Random.Range(0, spawnAt.Length)];
+                    SpawnObject(obj, location);
+                }
+            }
+        }
+        TriggerOnSpawn();
+        nextSpawnTime = Time.time + spawnDelay;
+        if (isLimited)
+        {
+            remainingShots--;
+            if (remainingShots == 0 && !hasTriggeredOnEmpty)
+            {
+                hasTriggeredOnEmpty = true;
+                TriggerOnEmpty();
+            }
+        }
+    }
+    private void SpawnObject(GameObject obj, GameObject location)
+    {
+        if (!gameObject.activeInHierarchy) return;
+        Vector3 worldPosition = location.transform.position;
+        Quaternion worldRotation = location.transform.rotation;
+        Transform currentTransform = location.transform;
+        while (currentTransform.parent != null)
+        {
+            worldPosition += currentTransform.localPosition;
+            worldRotation *= currentTransform.localRotation;
+            currentTransform = currentTransform.parent;
+        }
+        GameObject spawnedObject = Instantiate(obj, worldPosition, worldRotation);
+        Rigidbody rb = spawnedObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            Vector3 force = Vector3.zero;
+            Vector3 forwardDirection = location.transform.forward;
+            Vector3 rightDirection = location.transform.right;
+            Vector3 upDirection = location.transform.up;
+
+            if (zAcceleration != 0f)
+            {
+                force += forwardDirection * zAcceleration;
+            }
+            if (xAcceleration != 0f)
+            {
+                force += rightDirection * xAcceleration;
+            }
+            if (yAcceleration != 0f)
+            {
+                force += upDirection * yAcceleration;
+            }
+            rb.velocity = force;
+            rb.drag = 0f;
+            rb.angularDrag = 0f;
+        }
+        else
+        {
+            Debug.LogWarning($"Spawned object '{spawnedObject.name}' does not have a Rigidbody. Acceleration will not be applied.");
+        }
+    }
+    public void StartLoop()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (isLoop && loopCoroutine == null)
+        {
+            loopCoroutine = StartCoroutine(SpawnLoop());
+        }
+    }
+    public void StopLoop()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (loopCoroutine != null)
+        {
+            StopCoroutine(loopCoroutine);
+            loopCoroutine = null;
+        }
+    }
+    private IEnumerator SpawnLoop()
+    {
+        while (isLoop)
+        {
+            if (!gameObject.activeInHierarchy) yield break;
+            Spawn();
+            float delay = useRandomLoopDelay
+                ? Random.Range(minLoopDelay, maxLoopDelay)
+                : loopDelay;
+            yield return new WaitForSeconds(delay);
+        }
+    }
+    public void Reset()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (remainingShots == amount)
+        {
+            Debug.LogWarning("Reset failed: Remaining shots are already at the maximum.");
+            TriggerOnResetFail();
+            return;
+        }
+        remainingShots = amount;
+        hasTriggeredOnEmpty = false;
+        Debug.Log("Remaining shots have been reset.");
+        TriggerOnReset();
+    }
+    private void TriggerOnEmpty()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        InvokeMethod(onEmptyComponent, onEmptyMethod, "On Empty");
+    }
+    private void TriggerOnReset()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        InvokeMethod(onResetComponent, onResetMethod, "On Reset");
+    }
+    private void TriggerOnResetFail()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        InvokeMethod(onResetFailComponent, onResetFailMethod, "On Reset Fail");
+    }
+    private void TriggerOnSpawn()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        InvokeMethod(onSpawnComponent, onSpawnMethod, "On Spawn");
+    }
+    private void TriggerOnSpawnFail()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (Time.time >= nextFailTime)
+        {
+            InvokeMethod(onSpawnFailComponent, onSpawnFailMethod, "On Spawn Fail");
+            nextFailTime = Time.time + spawnDelay;
+        }
+    }
+    private void InvokeMethod(Component component, string methodName, string actionType)
+    {
+        if (!gameObject.activeInHierarchy) return;
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            var method = component.GetType().GetMethod(methodName);
+            if (method != null)
+            {
+                method.Invoke(component, null);
+            }
+            else
+            {
+                Debug.LogError($"Method '{methodName}' not found on component '{component.GetType().Name}' for {actionType}.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"{actionType} behavior is not configured.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
