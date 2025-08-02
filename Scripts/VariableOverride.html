@@ -11,7 +11,7 @@
 <left>
 <h1>VariableOverride.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=115cP7WFXDw6i8H2ZZoUelyenAKlvJ5Ga')">Download</button>
-<h1>Version 3:</h1>
+<h1>Version 4:</h1>
 This script is used to override variables from script components
 <h1>Method names:</h1>
 Override
@@ -28,7 +28,9 @@ public class VariableCategory
     public string name;
     public VariableType type;
     public string value;
-
+    public bool useComponentVar = false;
+    public MonoBehaviour sourceComponent;
+    public string sourceVariableName;
     public enum VariableType
     {
         String,
@@ -57,7 +59,9 @@ public class VariableOverride : MonoBehaviour
                 Debug.LogWarning("Variable name is empty for one of the variables.");
                 continue;
             }
-            string variableName = char.ToLower(variable.name[0]) + variable.name.Substring(1).Replace(" ", "");
+            if (variable.useComponentVar)
+                continue;
+            string variableName = FormatVariableName(variable.name);
             FieldInfo field = componentToOverride.GetType().GetField(variableName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (field == null)
             {
@@ -95,6 +99,42 @@ public class VariableOverride : MonoBehaviour
                 Debug.Log($"Field '{variableName}' has been overridden with value: {valueToSet}");
             }
         }
+    }
+    private void Update()
+    {
+        foreach (var variable in variables)
+        {
+            if (!variable.useComponentVar || variable.sourceComponent == null || componentToOverride == null)
+                continue;
+            string targetVariableName = FormatVariableName(variable.name);
+            string sourceVariableName = FormatVariableName(variable.sourceVariableName);
+            FieldInfo targetField = componentToOverride.GetType().GetField(targetVariableName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo sourceField = variable.sourceComponent.GetType().GetField(sourceVariableName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (targetField == null)
+            {
+                Debug.LogWarning($"Target field '{targetVariableName}' not found in component '{componentToOverride.GetType().Name}'");
+                continue;
+            }
+            if (sourceField == null)
+            {
+                Debug.LogWarning($"Source field '{sourceVariableName}' not found in component '{variable.sourceComponent.GetType().Name}'");
+                continue;
+            }
+            object sourceValue = sourceField.GetValue(variable.sourceComponent);
+            targetField.SetValue(componentToOverride, sourceValue);
+        }
+    }
+    private string FormatVariableName(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        string[] parts = input.Split(' ');
+        for (int i = 0; i < parts.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(parts[i])) continue;
+            parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1);
+        }
+        string noSpaceName = string.Join("", parts);
+        return char.ToLower(noSpaceName[0]) + noSpaceName.Substring(1);
     }
 }</textarea>
 </right>
