@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - StatCreator.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>StatCreator.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1W7W41x0wRcZ6pXgafkNCR-PFjPOoHHeS')">Download</button>
+<h1>Version 1:</h1>
+This script allows you to make custom stats with any name you want!
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[System.Serializable]
+public class Stat
+{
+    public string statName;
+    public StatType statType;
+    public bool noMinLimit = true;
+    public bool noMaxLimit = true;
+    public float minLimit = 0f;
+    public float maxLimit = 0f;
+    public int intValue;
+    public float floatValue;
+    public string stringValue;
+    public void ClampValue()
+    {
+        switch (statType)
+        {
+            case StatType.Int:
+                if (!noMinLimit)
+                    intValue = Mathf.Max(intValue, Mathf.FloorToInt(minLimit));
+                if (!noMaxLimit)
+                    intValue = Mathf.Min(intValue, Mathf.FloorToInt(maxLimit));
+                break;
+            case StatType.Float:
+                if (!noMinLimit)
+                    floatValue = Mathf.Max(floatValue, minLimit);
+                if (!noMaxLimit)
+                    floatValue = Mathf.Min(floatValue, maxLimit);
+                break;
+            case StatType.String:
+                break;
+        }
+    }
+}
+public enum StatType
+{
+    Int,
+    Float,
+    String
+}
+public class StatCreator : MonoBehaviour
+{
+    public Stat[] stats;
+    private void OnValidate()
+    {
+        if (stats == null) return;
+        foreach (var stat in stats)
+        {
+            stat.ClampValue();
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
