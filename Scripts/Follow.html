@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Follow.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Follow.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Im3ndE3Icz_sam65BWEhi3M0TJjJU3As')">Download</button>
+<h1>Version 6:</h1>
+This script is used to follow certain vertexes of an another object (includes rotational)
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Follow : MonoBehaviour
+{
+    [Header("Following Object Settings")]
+    public GameObject followingObject;
+    public bool isFollowerUI = false;
+    [Header("Position Follow Settings")]
+    public bool followX = false;
+    public bool followY = false;
+    public bool followZ = false;
+    [Header("Rotation Follow Settings")]
+    public bool followRotationX = false;
+    public bool followRotationY = false;
+    public bool followRotationZ = false;
+    [Header("Face towards an object")]
+    public bool faceObject = false;
+    [Header("Use Facing Direction Instead of Position")]
+    public bool useFacingDirection = false;
+    public LayerMask layerToCheck;
+    private const float collisionOffset = 0.01f;
+    private void Update()
+    {
+        if (faceObject && followingObject != null)
+        {
+            Vector3 direction = followingObject.transform.position - transform.position;
+            if (direction.sqrMagnitude == 0) return;
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
+        }
+        if (!useFacingDirection && followingObject != null)
+        {
+            if (followX)
+                transform.position = new Vector3(followingObject.transform.position.x, transform.position.y, transform.position.z);
+            if (followY)
+                transform.position = new Vector3(transform.position.x, followingObject.transform.position.y, transform.position.z);
+            if (followZ)
+                transform.position = new Vector3(transform.position.x, transform.position.y, followingObject.transform.position.z);
+            if (followRotationX && !faceObject)
+                transform.rotation = Quaternion.Euler(followingObject.transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, transform.rotation.eulerAngles.z);
+            if (followRotationY && !faceObject)
+            {
+                if (isFollowerUI)
+                {
+                    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, 0, followingObject.transform.rotation.eulerAngles.y);
+                }
+                else
+                {
+                    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, followingObject.transform.rotation.eulerAngles.y, transform.rotation.eulerAngles.z);
+                }
+            }
+            if (followRotationZ && !faceObject)
+                transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, followingObject.transform.rotation.eulerAngles.z);
+        }
+        if (useFacingDirection && followingObject != null)
+        {
+            Vector3 direction = followingObject.transform.forward;
+            Vector3 origin = followingObject.transform.position;
+            RaycastHit hit;
+            if (Physics.Raycast(origin, direction, out hit, Mathf.Infinity, layerToCheck))
+            {
+                if (IsCollidable(hit.collider.gameObject))
+                {
+                    transform.position = hit.point - (direction * collisionOffset);
+                }
+            }
+        }
+    }
+    private bool IsCollidable(GameObject hitObject)
+    {
+        Transform followingParent = followingObject.transform.parent;
+        if (hitObject.transform.IsChildOf(followingParent) || hitObject.transform == followingObject.transform || hitObject.transform.parent == followingParent)
+        {
+            return false;
+        }
+        return true;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
