@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Drag.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Drag.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=15hwzbP8l3VMPt1BxeqAh6EKEgl4GkbKz')">Download</button>
+<h1>Version 2:</h1>
+This script is used to make objects to be able to drag others while colliding together
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Drag : MonoBehaviour
+{
+    [Header("Draggable Objects")]
+    public GameObject[] draggableObjects;
+    [Header("Side Activation")]
+    public bool useTop = true;
+    public bool useBottom = false;
+    public bool useFront = false;
+    public bool useBack = false;
+    public bool useLeft = false;
+    public bool useRight = false;
+    private HashSet<GameObject> collidingObjects = new HashSet<GameObject>();
+    private Dictionary<GameObject, Vector3> previousPositions = new Dictionary<GameObject, Vector3>();
+    private Vector3 lastPosition;
+
+    void Start()
+    {
+        lastPosition = transform.position;
+        foreach (GameObject draggable in draggableObjects)
+        {
+            if (draggable != null)
+            {
+                previousPositions[draggable] = draggable.transform.position;
+            }
+        }
+    }
+    void FixedUpdate()
+    {
+        Vector3 movementDelta = transform.position - lastPosition;
+        
+        foreach (GameObject obj in collidingObjects)
+        {
+            if (obj != null && ShouldDrag(obj))
+            {
+                ApplyDrag(obj, movementDelta);
+            }
+        }
+        lastPosition = transform.position;
+    }
+    private bool ShouldDrag(GameObject obj)
+    {
+        Vector3 relativePosition = obj.transform.position - transform.position;
+        if (useTop && relativePosition.y > 0) return true;
+        if (useBottom && relativePosition.y < 0) return true;
+        if (useFront && relativePosition.z > 0) return true;
+        if (useBack && relativePosition.z < 0) return true;
+        if (useLeft && relativePosition.x < 0) return true;
+        if (useRight && relativePosition.x > 0) return true;
+        return false;
+    }
+    private void ApplyDrag(GameObject obj, Vector3 movementDelta)
+    {
+        Vector3 velocity = movementDelta / Time.deltaTime;
+        obj.transform.position += velocity * Time.deltaTime;
+        previousPositions[obj] = obj.transform.position;
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        foreach (GameObject draggable in draggableObjects)
+        {
+            if (draggable != null && collision.gameObject == draggable)
+            {
+                collidingObjects.Add(draggable);
+                break;
+            }
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collidingObjects.Contains(collision.gameObject))
+        {
+            collidingObjects.Remove(collision.gameObject);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
