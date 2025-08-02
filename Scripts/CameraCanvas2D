@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>CameraCanvas2D.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=117on-2RnpvQlJ_GeglOjghMgrFgP2zMg')">Download</button>
+<h1>Version 1:</h1>
+This script is used to manage the size of the camera for a 2D game
+<h1>Method names:</h1>
+UpdateCameraSize
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+
+[ExecuteInEditMode]
+[RequireComponent(typeof(Camera))]
+public class CameraCanvas2D : MonoBehaviour
+{
+    public float cameraWidth = 20f;
+    public float cameraHeight = 10f;
+    private Camera _camera;
+    private float originalAspect;
+    void OnEnable()
+    {
+        _camera = GetComponent<Camera>();
+        originalAspect = _camera.aspect;
+        UpdateCameraSize();
+    }
+    public void UpdateCameraSize()
+    {
+        if (_camera != null)
+        {
+            if (_camera.orthographic)
+            {
+                _camera.orthographicSize = cameraHeight / 2f;
+                _camera.aspect = cameraWidth / cameraHeight;
+            }
+        }
+    }
+    void OnValidate()
+    {
+        UpdateCameraSize();
+    }
+    void OnDisable()
+    {
+        if (_camera != null)
+        {
+            _camera.aspect = originalAspect;
+        }
+    }
+}
+#if UNITY_EDITOR
+[CustomEditor(typeof(CameraCanvas2D))]
+public class CameraCanvas2DEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        CameraCanvas2D cameraCanvas2D = (CameraCanvas2D)target;
+        cameraCanvas2D.cameraWidth = EditorGUILayout.FloatField("Camera Width", cameraCanvas2D.cameraWidth);
+        cameraCanvas2D.cameraHeight = EditorGUILayout.FloatField("Camera Height", cameraCanvas2D.cameraHeight);
+        if (GUI.changed)
+        {
+            cameraCanvas2D.UpdateCameraSize();
+        }
+        DrawDefaultInspector();
+    }
+}
+#endif</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
