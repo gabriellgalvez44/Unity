@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>BotNavigation.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1gRfTqtucQrCUQ5O-ksd8MXQK3LFqUoF_')">Download</button>
+<h1>Version 4:</h1>
+This script is used to make any object move like a bot
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BotNavigation : MonoBehaviour
+{
+    [Header("Navigation Settings")]
+    public float wanderTime = 3f;
+    public float wanderSpeed = 1f;
+    public float followSpeed = 3f;
+    public float range = 10f;
+    public float minDistanceFromObjects = 2f;
+    public float blindRange = 5f;
+    public bool faceMovement = true;
+    [Header("2D game settings")]
+    public bool isGame2D = false;
+    public bool stayInCameraBounds = false;
+    [Header("Ignored Objects")]
+    public GameObject[] ignoreObjects;
+    [Header("Targeting")]
+    public GameObject target;
+    [Header("Nodes")]
+    public bool useNodes = false;
+    public GameObject[] nodes;
+    [Header("onReachLocation")]
+    public Component onReachLocationComponent;
+    public string onReachLocationMethod;
+    [Header("onTargetSpotted")]
+    public Component onTargetSpottedComponent;
+    public string onTargetSpottedMethod;
+    [Header("onTargetLost")]
+    public Component onTargetLostComponent;
+    public string onTargetLostMethod;
+    [Header("Line of Sight")]
+    public bool lineOfSight = false;
+    private Vector3 startPosition;
+    private float currentWanderTime;
+    private bool isTargetInRange = false;
+    private bool wasTargetInRange = false;
+    private Vector3 randomDestination;
+    private GameObject currentNode;
+    private Quaternion originalRotation;
+    private Camera botCamera;
+    private void Start()
+    {
+        startPosition = transform.position;
+        currentWanderTime = wanderTime;
+        SetNewRandomDestination();
+        originalRotation = Quaternion.Euler(0, transform.eulerAngles.y, 0);
+        botCamera = GetComponentInChildren<Camera>();
+        if (botCamera == null)
+        {
+            Debug.LogWarning("No Camera component found on bot. Line of sight will be disabled.");
+        }
+    void Update()
+    {
+        if (target != null)
+        {
+            if (Vector3.Distance(transform.position, target.transform.position) <= range && HasLineOfSight())
+            {
+                if (!isTargetInRange)
+                {
+                    isTargetInRange = true;
+                    TriggerCallback(onTargetSpottedComponent, onTargetSpottedMethod);
+                }
+                MoveTowardsTarget();
+            }
+            else
+            {
+                if (isTargetInRange)
+                {
+                    isTargetInRange = false;
+                    TriggerCallback(onTargetLostComponent, onTargetLostMethod);
+                }
+                Wander();
+            }
+        }
+        else
+        {
+            if (isTargetInRange)
+            {
+                isTargetInRange = false;
+                TriggerCallback(onTargetLostComponent, onTargetLostMethod);
+            }
+            Wander();
+        }
+        if (!isTargetInRange)
+        {
+            if (currentWanderTime <= 0f)
+            {
+                SetNewRandomDestination();
+                currentWanderTime = wanderTime;
+            }
+            else
+            {
+                currentWanderTime -= Time.deltaTime;
+            }
+        }
+        AvoidIgnoreObjects();
+        AvoidEdgeFall();
+        if (!isTargetInRange && faceMovement)
+        {
+            transform.rotation = Quaternion.Lerp(transform.rotation, originalRotation, Time.deltaTime * 5f);
+        }
+        if (!isTargetInRange && Vector3.Distance(transform.position, randomDestination) < 0.5f)
+        {
+            TriggerCallback(onReachLocationComponent, onReachLocationMethod);
+            SetNewRandomDestination();
+        }
+            Vector3 position = transform.position;
+            position.z = 0f;
+            if (stayInCameraBounds)
+            {
+                Camera camera = botCamera;
+                if (camera != null)
+                {
+                    float cameraHeight = camera.orthographicSize;
+                    float cameraWidth = cameraHeight * camera.aspect;
+                    Vector3 botPos = position;
+                    float leftLimit = camera.transform.position.x - cameraWidth;
+                    float rightLimit = camera.transform.position.x + cameraWidth;
+                    float topLimit = camera.transform.position.y + cameraHeight;
+                    float bottomLimit = camera.transform.position.y - cameraHeight;
+                    float clampedX = Mathf.Clamp(botPos.x, leftLimit, rightLimit);
+                    float clampedY = Mathf.Clamp(botPos.y, bottomLimit, topLimit);
+                    position = new Vector3(clampedX, clampedY, position.z); 
+                }
+            }
+            transform.position = position;
+        }
+    }
+    private void Wander()
+    {
+        if (!isTargetInRange)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, randomDestination, wanderSpeed * Time.deltaTime);
+            if (faceMovement)
+            {
+                Vector3 direction = randomDestination - transform.position;
+                direction.y = 0;
+                if (direction != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(direction);
+                    if (botCamera != null && lineOfSight)
+                    {
+                        botCamera.transform.rotation = Quaternion.LookRotation(direction);
+                    }
+                }
+            }
+        }
+    }
+    private void MoveTowardsTarget()
+    {
+        if (isTargetInRange)
+        {
+            Vector3 targetPosition = target.transform.position;
+            Vector3 directionToTarget = targetPosition - transform.position;
+            directionToTarget.Normalize();
+            if (!IsNearCliff(directionToTarget))
+            {
+                transform.position = Vector3.MoveTowards(transform.position, targetPosition, followSpeed * Time.deltaTime);
+                if (faceMovement)
+                {
+                    Vector3 direction = targetPosition - transform.position;
+                    if (direction != Vector3.zero)
+                    {
+                        transform.rotation = Quaternion.LookRotation(direction);
+                        if (botCamera != null && lineOfSight)
+                        {
+                            botCamera.transform.rotation = Quaternion.LookRotation(direction);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private bool HasLineOfSight()
+    {
+        if (botCamera == null) return true;
+        Ray ray = new Ray(botCamera.transform.position, target.transform.position - botCamera.transform.position);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit))
+        {
+            return hit.transform.gameObject == target;
+        }
+        return false;
+    }
+    private void SetNewRandomDestination()
+    {
+        if (useNodes && nodes.Length > 0)
+        {
+            currentNode = nodes[Random.Range(0, nodes.Length)];
+            randomDestination = currentNode.transform.position;
+        }
+        else
+        {
+            Vector3 randomDirection = Random.insideUnitSphere * range;
+            randomDirection += startPosition;
+            randomDestination = randomDirection;
+            RaycastHit hit;
+            if (Physics.Raycast(randomDestination, Vector3.down, out hit, Mathf.Infinity))
+            {
+                randomDestination = hit.point;
+            }
+        }
+    }
+    private void AvoidIgnoreObjects()
+    {
+        foreach (var obj in ignoreObjects)
+        {
+            if (obj != null)
+            {
+                float distance = Vector3.Distance(transform.position, obj.transform.position);
+                if (distance < minDistanceFromObjects)
+                {
+                    Vector3 directionAway = (transform.position - obj.transform.position).normalized;
+                    transform.position += directionAway * Time.deltaTime;
+                }
+            }
+        }
+    }
+    private void AvoidEdgeFall()
+    {
+        RaycastHit hitDown;
+        if (!Physics.Raycast(transform.position, Vector3.down, out hitDown, Mathf.Infinity))
+        {
+            Vector3 directionAwayFromEdge = -transform.forward;
+            transform.position += directionAwayFromEdge * wanderSpeed * Time.deltaTime;
+        }
+    }
+    private bool IsNearCliff(Vector3 direction)
+    {
+        RaycastHit hit;
+        if (!Physics.Raycast(transform.position + direction * 0.5f, Vector3.down, out hit, 2f))
+        {
+            return true;
+        }
+        return false;
+    }
+    private void TriggerCallback(Component component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            component.SendMessage(methodName, SendMessageOptions.DontRequireReceiver);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
