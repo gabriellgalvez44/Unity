@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Performance.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Performance.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=18jY2Zkbe_g9FiDyxQAEq_plK2KQlCzTA')">Download</button>
+<h1>Version 1:</h1>
+This script is used to boost your game performance
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.Rendering;
+using UnityEngine;
+
+public class Performance : MonoBehaviour
+{
+    public float textureSwitchDistance = 50f;
+    public bool useCulling = true;
+    public bool useLOD = true;
+    private Camera mainCam;
+    void Start()
+    {
+        mainCam = Camera.main;
+        if (mainCam != null)
+        {
+            mainCam.useOcclusionCulling = useCulling;
+            Debug.Log("Main camera found. Occlusion Culling enabled.");
+        }
+        else
+        {
+            Debug.LogWarning("No main camera found.");
+        }
+    }
+    void Update()
+    {
+        if (!mainCam) return;
+        Renderer[] renderers = FindObjectsOfType<Renderer>();
+        Vector3 camPos = mainCam.transform.position;
+        foreach (Renderer rend in renderers)
+        {
+            if (rend.material != null && rend.material.mainTexture != null)
+            {
+                if (useLOD)
+                {
+                    float distance = Vector3.Distance(camPos, rend.transform.position);
+                    float mipBias = Mathf.Clamp01(distance / textureSwitchDistance);
+                    rend.material.mainTexture.mipMapBias = mipBias * 2f - 1f;
+                }
+                else
+                {
+                    rend.material.mainTexture.mipMapBias = -1f;
+                }
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
