@@ -11,7 +11,7 @@
 <left>
 <h1>Pathway.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=15Ditfwv7uFmhTuLejf_x6ddQXPyCNf-t')">Download</button>
-<h1>Version 4:</h1>
+<h1>Version 5:</h1>
 This script is used to make objects move within a pathway (Sequence of pin points)
 <h1>Method names:</h1>
 StartMoving<br>
@@ -26,7 +26,8 @@ public class Pathway : MonoBehaviour
 {
     [Header("Path Settings")]
     public GameObject[] objectsToMove;
-    public GameObject[] pinPoints;
+    public GameObject pathwayParent;
+    private GameObject[] pinPoints;
     public float pathDuration = 5f;
     [Header("Behavior Settings")]
     public bool loop = false;
@@ -46,6 +47,20 @@ public class Pathway : MonoBehaviour
     private float[] segmentDurations;
     private void Start()
     {
+        if (pathwayParent != null)
+        {
+            int childCount = pathwayParent.transform.childCount;
+            pinPoints = new GameObject[childCount];
+            for (int i = 0; i < childCount; i++)
+            {
+                pinPoints[i] = pathwayParent.transform.GetChild(i).gameObject;
+            }
+        }
+        else
+        {
+            Debug.LogError("Pathway Parent is not assigned.");
+            return;
+        }
         if (pinPoints.Length > 1)
         {
             CalculateSegmentDurations();
@@ -131,7 +146,8 @@ public class Pathway : MonoBehaviour
                     yield return MoveToNextPinPoint(i, i - 1);
                 }
             }
-            if (onFinishComponent != null && onFinishMethodName != null) {
+            if (onFinishComponent != null && onFinishMethodName != null)
+            {
                 onFinishComponent.Invoke(onFinishMethodName, 0f);
             }
             if (loop)
