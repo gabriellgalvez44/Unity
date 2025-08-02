@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - VoiceListener.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>VoiceListener.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1tIS5s57bQ6zqUCMYAjwOlZNh0KMdRX-E')">Download</button>
+<h1>Version 1:</h1>
+This script is used to make an object react to your voice
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class VoiceListener : MonoBehaviour
+{
+    [Header("Voice Listener Settings")]
+    public float minimumLoudness = 0.1f;
+    public GameObject voiceInputObject;
+    public Component onTriggeredComponent;
+    public string onTriggeredMethod;
+    public Component onLostComponent;
+    public string onLostMethod;
+    private VoiceInput voiceInput;
+    private void Start()
+    {
+        if (voiceInputObject != null)
+        {
+            voiceInput = voiceInputObject.GetComponent<VoiceInput>();
+        }
+        else
+        {
+            Debug.LogWarning("VoiceInputObject is not assigned. Please assign it in the inspector.");
+        }
+    }
+    private void Update()
+    {
+        if (voiceInput == null) return;
+        float loudness = voiceInput.GetCurrentLoudness;
+        float distanceToListener = Vector3.Distance(transform.position, voiceInput.transform.position);
+        bool isWithinRange = voiceInput.useProximity ? (distanceToListener <= voiceInput.range) : true;
+        float adjustedLoudness = loudness;
+        if (voiceInput.useProximity)
+        {
+            adjustedLoudness *= Mathf.Clamp01(1f - (distanceToListener / voiceInput.range));
+        }
+        bool isLoudEnough = adjustedLoudness >= minimumLoudness;
+        if (isLoudEnough && isWithinRange)
+        {
+            if (onTriggeredComponent != null && !string.IsNullOrEmpty(onTriggeredMethod))
+            {
+                InvokeMethod(onTriggeredComponent, onTriggeredMethod);
+            }
+        }
+        else
+        {
+            if (onLostComponent != null && !string.IsNullOrEmpty(onLostMethod))
+            {
+                InvokeMethod(onLostComponent, onLostMethod);
+            }
+        }
+    }
+    private void InvokeMethod(Component component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            var method = component.GetType().GetMethod(methodName);
+            if (method != null)
+            {
+                method.Invoke(component, null);
+            }
+            else
+            {
+                Debug.LogWarning($"Method '{methodName}' not found on component '{component.GetType().Name}' attached to {gameObject.name}.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Component or method is not properly set on {gameObject.name}.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
