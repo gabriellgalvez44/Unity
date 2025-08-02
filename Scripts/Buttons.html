@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Buttons.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1MUyHvHww6xkcK5KubYCmrzWj2sl5xOEg')">Download</button>
+<h1>Version 2:</h1>
+This script is used to make buttons execute actions in the hiarchy
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+public class Buttons : MonoBehaviour
+{
+    [System.Serializable]
+    public class ButtonActions
+    {
+        public string name;
+        public MonoBehaviour component;
+        public string method;
+    }
+    [Header("Button Actions")]
+    public ButtonActions[] buttonActions;
+#if UNITY_EDITOR
+    [CustomEditor(typeof(Buttons))]
+    public class ButtonsEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            Buttons button = (Buttons)target;
+            DrawDefaultInspector();
+            if (button.buttonActions.Length == 0)
+            {
+                EditorGUILayout.HelpBox("No button actions to display.", MessageType.Info);
+            }
+            else
+            {
+                foreach (var buttonAction in button.buttonActions)
+                {
+                    if (GUILayout.Button(buttonAction.name))
+                    {
+                        CallButtonAction(buttonAction);
+                    }
+                }
+            }
+        }
+        private void CallButtonAction(ButtonActions buttonAction)
+        {
+            if (buttonAction == null)
+            {
+                Debug.LogWarning("Button action is null.");
+                return;
+            }
+            if (buttonAction.component == null)
+            {
+                Debug.LogWarning("Component not assigned for button: " + buttonAction.name);
+                return;
+            }
+            if (string.IsNullOrEmpty(buttonAction.method))
+            {
+                Debug.LogWarning("Method not assigned for button: " + buttonAction.name);
+                return;
+            }
+            var methodInfo = buttonAction.component.GetType().GetMethod(buttonAction.method);
+            if (methodInfo == null)
+            {
+                Debug.LogWarning("Method '" + buttonAction.method + "' not found on component: " + buttonAction.component.GetType().Name);
+                return;
+            }
+            methodInfo.Invoke(buttonAction.component, null);
+        }
+    }
+#endif
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
