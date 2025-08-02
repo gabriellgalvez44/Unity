@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Pathway.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Pathway.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=15Ditfwv7uFmhTuLejf_x6ddQXPyCNf-t')">Download</button>
+<h1>Version 4:</h1>
+This script is used to make objects move within a pathway (Sequence of pin points)
+<h1>Method names:</h1>
+StartMoving<br>
+StopMoving
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Pathway : MonoBehaviour
+{
+    [Header("Path Settings")]
+    public GameObject[] objectsToMove;
+    public GameObject[] pinPoints;
+    public float pathDuration = 5f;
+    [Header("Behavior Settings")]
+    public bool loop = false;
+    public bool followRotation = false;
+    public bool autoStart = false;
+    public enum LoopTransition
+    {
+        Restart,
+        Reverse
+    }
+    public LoopTransition loopTransition = LoopTransition.Restart;
+    public MonoBehaviour onFinishComponent;
+    public string onFinishMethodName;
+    private bool isMoving = false;
+    private bool isReversing = false;
+    private int currentPinPointIndex = 0;
+    private float[] segmentDurations;
+    private void Start()
+    {
+        if (pinPoints.Length > 1)
+        {
+            CalculateSegmentDurations();
+        }
+        else
+        {
+            Debug.LogError("Path requires at least 2 pin points to function.");
+            return;
+        }
+        TeleportObjectsToStart();
+
+        if (autoStart)
+        {
+            StartMoving();
+        }
+    }
+    private void CalculateSegmentDurations()
+    {
+        segmentDurations = new float[pinPoints.Length - 1];
+        float totalDistance = 0f;
+        for (int i = 0; i < pinPoints.Length - 1; i++)
+        {
+            totalDistance += Vector3.Distance(pinPoints[i].transform.position, pinPoints[i + 1].transform.position);
+        }
+        for (int i = 0; i < pinPoints.Length - 1; i++)
+        {
+            float segmentDistance = Vector3.Distance(pinPoints[i].transform.position, pinPoints[i + 1].transform.position);
+            segmentDurations[i] = (segmentDistance / totalDistance) * pathDuration;
+        }
+    }
+    private void TeleportObjectsToStart()
+    {
+        if (pinPoints.Length > 0)
+        {
+            foreach (GameObject obj in objectsToMove)
+            {
+                if (obj != null)
+                {
+                    obj.transform.position = pinPoints[0].transform.position;
+                    if (followRotation)
+                    {
+                        obj.transform.rotation = pinPoints[0].transform.rotation;
+                    }
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("No pin points defined for the path.");
+        }
+    }
+    public void StartMoving()
+    {
+        if (!isMoving && pinPoints.Length > 1)
+        {
+            isMoving = true;
+            isReversing = false;
+            StartCoroutine(FollowPath());
+        }
+    }
+    public void StopMoving()
+    {
+        isMoving = false;
+        StopAllCoroutines();
+    }
+    private IEnumerator FollowPath()
+    {
+        while (isMoving)
+        {
+            if (!isReversing)
+            {
+                for (int i = 0; i < pinPoints.Length - 1; i++)
+                {
+                    currentPinPointIndex = i;
+                    yield return MoveToNextPinPoint(i, i + 1);
+                }
+            }
+            else
+            {
+                for (int i = pinPoints.Length - 1; i > 0; i--)
+                {
+                    currentPinPointIndex = i;
+                    yield return MoveToNextPinPoint(i, i - 1);
+                }
+            }
+            if (onFinishComponent != null && onFinishMethodName != null) {
+                onFinishComponent.Invoke(onFinishMethodName, 0f);
+            }
+            if (loop)
+            {
+                if (loopTransition == LoopTransition.Restart)
+                {
+                    TeleportObjectsToStart();
+                }
+                else if (loopTransition == LoopTransition.Reverse)
+                {
+                    isReversing = !isReversing;
+                }
+            }
+            else
+            {
+                StopMoving();
+            }
+        }
+    }
+    private IEnumerator MoveToNextPinPoint(int startIndex, int endIndex)
+    {
+        if (startIndex < 0 || startIndex >= pinPoints.Length || endIndex < 0 || endIndex >= pinPoints.Length)
+        {
+            yield break;
+        }
+        Vector3 startPos = pinPoints[startIndex].transform.position;
+        Vector3 endPos = pinPoints[endIndex].transform.position;
+        Quaternion startRot = pinPoints[startIndex].transform.rotation;
+        Quaternion endRot = pinPoints[endIndex].transform.rotation;
+        float elapsedTime = 0f;
+        float segmentDuration = segmentDurations[Mathf.Min(startIndex, endIndex)];
+        while (elapsedTime < segmentDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsedTime / segmentDuration);
+            foreach (GameObject obj in objectsToMove)
+            {
+                if (obj != null)
+                {
+                    obj.transform.position = Vector3.Lerp(startPos, endPos, t);
+                    if (followRotation)
+                    {
+                        obj.transform.rotation = Quaternion.Slerp(startRot, endRot, t);
+                    }
+                }
+            }
+            yield return null;
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
