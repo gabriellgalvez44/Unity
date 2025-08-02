@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - .cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Collectables.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=125Mbg5WFKzunYhQXPa0ut1qC5-nXMe1k')">Download</button>
+<h1>Version 1:</h1>
+This script is used to make collectables defined, and work properly
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Collectables : MonoBehaviour
+{
+    [System.Serializable]
+    public class CollectibleItem
+    {
+        public int itemNumber;
+        public MonoBehaviour itemPickupComponent;
+        public string itemPickupMethod;
+        public MonoBehaviour itemDropComponent;
+        public string itemDropMethod;
+        public bool isCollected = false;
+        public void Pickup()
+        {
+            if (itemPickupComponent != null && !isCollected)
+            {
+                var methodInfo = itemPickupComponent.GetType().GetMethod(itemPickupMethod);
+                if (methodInfo != null)
+                {
+                    methodInfo.Invoke(itemPickupComponent, null);
+                }
+                isCollected = true;
+            }
+        }
+        public void Drop()
+        {
+            if (itemDropComponent != null && isCollected)
+            {
+                var methodInfo = itemDropComponent.GetType().GetMethod(itemDropMethod);
+                if (methodInfo != null)
+                {
+                    methodInfo.Invoke(itemDropComponent, null);
+                }
+                isCollected = false;
+            }
+        }
+    }
+    public List<CollectibleItem> collectibleItems = new List<CollectibleItem>();
+    public void Pickup(int itemNumber)
+    {
+        var item = collectibleItems.Find(i => i.itemNumber == itemNumber);
+        if (item != null)
+        {
+            if (!item.isCollected)
+            {
+                item.Pickup();
+                Debug.Log("Picked up item " + itemNumber);
+            }
+            else
+            {
+                Debug.Log("Item " + itemNumber + " is already collected.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Item with itemNumber " + itemNumber + " not found.");
+        }
+    }
+    public void Drop(int itemNumber)
+    {
+        var item = collectibleItems.Find(i => i.itemNumber == itemNumber);
+        if (item != null)
+        {
+            if (item.isCollected)
+            {
+                item.Drop();
+                Debug.Log("Dropped item " + itemNumber);
+            }
+            else
+            {
+                Debug.Log("Item " + itemNumber + " is not collected, cannot drop.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Item with itemNumber " + itemNumber + " not found.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
