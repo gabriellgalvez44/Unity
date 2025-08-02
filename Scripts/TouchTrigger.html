@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - TouchTrigger.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>TouchTrigger.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1MZjTwXeVuECsFpBVcuqBjJrpeIj8FZBi')">Download</button>
+<h1>Version 4:</h1>
+This script is used to detect if 2 objects are colliding with each other, stops, while, during a consecutive duration, and etc... Then what actions will they do
+<h1>Method names:</h1>
+Reset
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+
+public class TouchTrigger : MonoBehaviour
+{
+    [Header("Collision Settings")]
+    public GameObject[] collisionObjects;
+    [Header("Use Layers for Collision")]
+    public bool useLayers = false;
+    public LayerMask layerMask;
+    [Header("OnCollision Settings")]
+    public MonoBehaviour onCollisionComponent;
+    public string onCollisionMethod;
+    [Header("WhileColliding Settings")]
+    public MonoBehaviour whileCollidingComponent;
+    public string whileCollidingMethod;
+    [Header("OnCollisionExit Settings")]
+    public MonoBehaviour onCollisionExitComponent;
+    public string onCollisionExitMethod;
+    [Header("OnCollidingForDuration Settings")]
+    public MonoBehaviour onCollidingForDurationComponent;
+    public string onCollidingForDurationMethod;
+    public float requiredCollisionTime = 1.0f;
+    public CollisionDurationResetOption durationResetOption = CollisionDurationResetOption.None;
+    [Header("X Collisions Settings")]
+    public float xAmount = 1;
+    public MonoBehaviour onXCollisionsMetComponent;
+    public string onXCollisionsMetMethod;
+    public bool resetOnMet = true;
+    public MonoBehaviour onXCollisionsNotMetComponent;
+    public string onXCollisionsNotMetMethod;
+    private Dictionary<GameObject, float> collisionTimers = new Dictionary<GameObject, float>();
+    private HashSet<GameObject> currentlyCollidingObjects = new HashSet<GameObject>();
+    private bool durationTriggered = false;
+    private int collisionCount = 0;
+    public enum CollisionDurationResetOption
+    {
+        None,
+        ResetOnExit,
+        ResetAutomatically
+    }
+    private void Update()
+    {
+        foreach (var obj in currentlyCollidingObjects)
+        {
+            if (obj != null && IsInCollisionObjects(obj))
+            {
+                ActivateComponent(whileCollidingComponent, whileCollidingMethod);
+                if (collisionTimers.ContainsKey(obj))
+                {
+                    collisionTimers[obj] += Time.deltaTime;
+                    if (collisionTimers[obj] >= requiredCollisionTime && !durationTriggered)
+                    {
+                        ActivateComponent(onCollidingForDurationComponent, onCollidingForDurationMethod);
+                        durationTriggered = true;
+                        if (durationResetOption == CollisionDurationResetOption.ResetAutomatically)
+                        {
+                            Reset(obj);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (IsInCollisionObjects(collision.gameObject) || (useLayers && IsInLayerMask(collision.gameObject)))
+        {
+            ActivateComponent(onCollisionComponent, onCollisionMethod);
+            collisionCount++;
+            if (collisionCount >= xAmount)
+            {
+                ActivateComponent(onXCollisionsMetComponent, onXCollisionsMetMethod);
+                if (resetOnMet)
+                {
+                    collisionCount = 0;
+                }
+            }
+            else
+            {
+                ActivateComponent(onXCollisionsNotMetComponent, onXCollisionsNotMetMethod);
+            }
+            if (!collisionTimers.ContainsKey(collision.gameObject))
+                collisionTimers[collision.gameObject] = 0f;
+            currentlyCollidingObjects.Add(collision.gameObject);
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (IsInCollisionObjects(collision.gameObject) || (useLayers && IsInLayerMask(collision.gameObject)))
+        {
+            ActivateComponent(onCollisionExitComponent, onCollisionExitMethod);
+            if (durationResetOption == CollisionDurationResetOption.ResetOnExit)
+            {
+                Reset(collision.gameObject);
+            }
+            collisionTimers.Remove(collision.gameObject);
+            currentlyCollidingObjects.Remove(collision.gameObject);
+        }
+    }
+    public void Reset()
+    {
+        collisionTimers.Clear();
+        durationTriggered = false;
+        collisionCount = 0;
+    }
+    private void Reset(GameObject obj)
+    {
+        if (collisionTimers.ContainsKey(obj))
+        {
+            collisionTimers[obj] = 0f;
+            durationTriggered = false;
+        }
+    }
+    private bool IsInCollisionObjects(GameObject obj)
+    {
+        foreach (var collisionObject in collisionObjects)
+        {
+            if (collisionObject == obj)
+                return true;
+        }
+        return false;
+    }
+    private bool IsInLayerMask(GameObject obj)
+    {
+        return (layerMask.value & (1 << obj.layer)) > 0;
+    }
+    private void ActivateComponent(MonoBehaviour component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            component.Invoke(methodName, 0f);
+        }
+        else
+        {
+            Debug.LogWarning("Component or method name is missing!");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
