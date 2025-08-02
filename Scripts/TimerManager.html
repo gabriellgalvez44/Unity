@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - TimerManager.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>TimerManager.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Qe8LR8TA_3c5Z0mR_lI5m0HLkiqpudXr')">Download</button>
+<h1>Version 1:</h1>
+This script is used to manage timers from the Timer.cs script
+<h1>Method names:</h1>
+Play<br>
+Pause<<br>
+Resume<br>
+Stop<br>
+Override
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TimerManager : MonoBehaviour
+{
+    [Tooltip("The GameObject that has the Timer component.")]
+    public GameObject targetObject;
+    [Tooltip("The name of the timer you want to control.")]
+    public string timerName;
+    [Header("Override Settings")]
+    public bool overrideTime = false;
+    public TimeOverrideMode overrideMode = TimeOverrideMode.Set;
+    [Tooltip("Time (in seconds) to apply with override.")]
+    public float seconds;
+    private Timer timerComponent;
+    public enum TimeOverrideMode
+    {
+        Set,
+        Add,
+        Subtract
+    }
+    void Awake()
+    {
+        if (targetObject != null)
+        {
+            timerComponent = targetObject.GetComponent<Timer>();
+            if (timerComponent == null)
+            {
+                Debug.LogError("Timer component not found on the specified GameObject.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Target object is not assigned.");
+        }
+    }
+    public void Play()
+    {
+        var timer = GetTimerByName();
+        if (timer != null)
+        {
+            timer.InternalStart();
+        }
+    }
+    public void Pause()
+    {
+        var timer = GetTimerByName();
+        if (timer != null && timer.running && !timer.pause)
+        {
+            timer.pause = true;
+            Debug.Log($"[{timer.name}] Timer Paused.");
+        }
+    }
+    public void Resume()
+    {
+        var timer = GetTimerByName();
+        if (timer != null && timer.running && timer.pause)
+        {
+            timer.pause = false;
+            Debug.Log($"[{timer.name}] Timer Resumed.");
+        }
+    }
+    public void Stop()
+    {
+        var timer = GetTimerByName();
+        if (timer != null)
+        {
+            timer.InternalStop();
+        }
+    }
+    public void Override()
+    {
+        if (!overrideTime)
+        {
+            Debug.LogWarning("Override is not enabled.");
+            return;
+        }
+        var timer = GetTimerByName();
+        if (timer != null)
+        {
+            switch (overrideMode)
+            {
+                case TimeOverrideMode.Set:
+                    timer.totalTimeInSeconds = Mathf.Max(0f, seconds);
+                    timer.remainingTime = timer.totalTimeInSeconds;
+                    break;
+                case TimeOverrideMode.Add:
+                    timer.totalTimeInSeconds += seconds;
+                    timer.remainingTime += seconds;
+                    break;
+                case TimeOverrideMode.Subtract:
+                    timer.totalTimeInSeconds = Mathf.Max(0f, timer.totalTimeInSeconds - seconds);
+                    timer.remainingTime = Mathf.Max(0f, timer.remainingTime - seconds);
+                    break;
+            }
+            Debug.Log($"[{timer.name}] totalTimeInSeconds overridden using {overrideMode}. New total: {timer.totalTimeInSeconds} seconds");
+        }
+    }
+    private Timer.TimerData GetTimerByName()
+    {
+        if (timerComponent == null)
+        {
+            Debug.LogWarning("Timer component not assigned or found.");
+            return null;
+        }
+        foreach (var timer in timerComponent.timers)
+        {
+            if (timer.name == timerName)
+            {
+                return timer;
+            }
+        }
+        Debug.LogWarning($"Timer with name \"{timerName}\" not found.");
+        return null;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
