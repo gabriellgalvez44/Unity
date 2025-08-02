@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - VariableOverride.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>VariableOverride.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=115cP7WFXDw6i8H2ZZoUelyenAKlvJ5Ga')">Download</button>
+<h1>Version 3:</h1>
+This script is used to override variables from script components
+<h1>Method names:</h1>
+Override
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.Reflection;
+
+[System.Serializable]
+public class VariableCategory
+{
+    public string name;
+    public VariableType type;
+    public string value;
+
+    public enum VariableType
+    {
+        String,
+        Bool,
+        Float,
+        Int
+    }
+}
+public class VariableOverride : MonoBehaviour
+{
+    public MonoBehaviour componentToOverride;
+    [SerializeField]
+    public VariableCategory[] variables;
+
+    public void Override()
+    {
+        if (componentToOverride == null)
+        {
+            Debug.LogError("No component assigned to override!");
+            return;
+        }
+        foreach (var variable in variables)
+        {
+            if (string.IsNullOrEmpty(variable.name))
+            {
+                Debug.LogWarning("Variable name is empty for one of the variables.");
+                continue;
+            }
+            string variableName = char.ToLower(variable.name[0]) + variable.name.Substring(1).Replace(" ", "");
+            FieldInfo field = componentToOverride.GetType().GetField(variableName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+            {
+                Debug.LogWarning($"Field '{variableName}' not found in component '{componentToOverride.GetType().Name}'");
+                continue;
+            }
+            object valueToSet = null;
+            switch (variable.type)
+            {
+                case VariableCategory.VariableType.String:
+                    valueToSet = variable.value;
+                    break;
+                case VariableCategory.VariableType.Bool:
+                    if (bool.TryParse(variable.value, out bool boolValue))
+                        valueToSet = boolValue;
+                    else
+                        valueToSet = false;
+                    break;
+                case VariableCategory.VariableType.Float:
+                    if (float.TryParse(variable.value, out float floatValue))
+                        valueToSet = floatValue;
+                    else
+                        valueToSet = 0f;
+                    break;
+                case VariableCategory.VariableType.Int:
+                    if (int.TryParse(variable.value, out int intValue))
+                        valueToSet = intValue;
+                    else
+                        valueToSet = 0;
+                    break;
+            }
+            if (valueToSet != null)
+            {
+                field.SetValue(componentToOverride, valueToSet);
+                Debug.Log($"Field '{variableName}' has been overridden with value: {valueToSet}");
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
