@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - RandomTrigger.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>RandomTrigger.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1hPetDeVXSKIUeTaQULOtEpN4ZW8ZRGeo')">Download</button>
+<h1>Version 2:</h1>
+This script is used to randomly execute actions
+<h1>Method names:</h1>
+Rand
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class RandomTrigger : MonoBehaviour
+{
+    [Header("Random Range Settings")]
+    public int minValue = 0;
+    public int maxValue = 100;
+    [Header("Winning Number")]
+    public int winningNumber;
+    [Header("On matching")]
+    public UnityEngine.Component componentOnMatch;
+    public string methodOnMatch;
+    [Header("On not matching")]
+    public UnityEngine.Component componentOnNoMatch; 
+    public string methodOnNoMatch;
+    public void Rand()
+    {
+        int randomNumber = UnityEngine.Random.Range(minValue, maxValue + 1);
+        Debug.Log("Random Number: " + randomNumber);
+        if (randomNumber == winningNumber)
+        {
+            InvokeMethod(componentOnMatch, methodOnMatch);
+        }
+        else
+        {
+            InvokeMethod(componentOnNoMatch, methodOnNoMatch);
+        }
+    }
+    private void InvokeMethod(UnityEngine.Component component, string methodName)
+    {
+        if (component != null)
+        {
+            var method = component.GetType().GetMethod(methodName);
+            if (method != null)
+            {
+                method.Invoke(component, null); 
+                Debug.Log("Method Invoked: " + methodName);
+            }
+            else
+            {
+                Debug.LogError($"Method {methodName} not found on component {component.GetType()}");
+            }
+        }
+        else
+        {
+            Debug.LogError("Component is not assigned!");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
