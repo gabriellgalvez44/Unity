@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - UIManagement.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>UIManagement.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1FuxBCjOiFzW7ntO8x1P_bdE4eXyfcDDg')">Download</button>
+<h1>Version 12:</h1>
+This script is used to override aspects of some objects in UI canvas's and detect if a text object is a certain text, for the detecting, if they match, not, and/or none of the texts do, what will they do each
+<h1>Method names:</h1>
+Activate
+<h1>IMPORTANT:</h1>
+When overriding text, to display x y and z coordinates/rotation and/or custom stats, you'll need to use tags instead of regular text, it is case sensitive so capitalization matters...<br>
+Do NOT type the () parts, those are comments explaining what they are for and/or how to use them if necessary...<br><br>
+{x} (position x)<br>
+{y} (position y)<br>
+{z} (position z)<br><br>
+{rx} (rotation x)<br>
+{ry} (rotation y)<br>
+{rz} (rotation z)<br><br>
+{stat:statNameGoesHere} (you'll need to attatch the object that holds you custom stats in the <a href=StatCreator.html>StatCreator.cs</a> script and replace "statNameGoesHere" with your actual stat name you want to display)<br>
+  {timer} (you'll need to attatch a/the object that holds the <a href=GameControl.html>GameControl.cs</a> script to display a timer)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
+using System.Reflection;
+
+public class UIManagement : MonoBehaviour
+{
+    [Header("Image Override Settings")]
+    public bool overrideImage = false;
+    public GameObject imageObject;
+    public Sprite image;
+    [Header("Objects")]
+    public GameObject textObject;
+    public GameObject statObject;
+    [Header("Text Override Settings")]
+    public bool overrideText = false;
+    [TextArea(3, 10)] 
+    public string text = "";
+    public bool exponential = false;
+    public float exponentialCharTime = 0.1f;
+    [System.Serializable]
+    public class TextMatchSettings
+    {
+        [TextArea(3, 10)]
+        public string expectedText = "";
+        public MonoBehaviour reachedComponent;
+        public string reachedMethod;
+        public MonoBehaviour notReachedComponent;
+        public string notReachedMethod;
+    }
+    [System.Serializable]
+    public class ButtonAction
+    {
+        public Button btnObject;
+        public MonoBehaviour targetComponent;
+        public string targetMethodName;
+    }
+    [Header("Look for text")]
+    public TextMatchSettings[] textMatchSettings;
+    public MonoBehaviour defaultNotMatchedComponent;
+    public string defaultNotMatchedMethod;
+    [Header("Position and Rotation Detection")]
+    public GameObject detectedObjectForPosition;
+    public GameObject detectedObjectForRotation;
+    public bool roundValues = true;
+    [Header("Button actions")]
+    public ButtonAction[] buttonActions;
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Vector2 mousePos = Input.mousePosition;
+            foreach (var action in buttonActions)
+            {
+                if (IsButtonClicked(action.btnObject, mousePos))
+                {
+                    InvokeMethod(action.targetComponent, action.targetMethodName);
+                }
+            }
+        }
+    }
+    bool IsButtonClicked(Button button, Vector2 screenPos)
+    {
+        if (button == null || !button.gameObject.activeInHierarchy)
+            return false;
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        Canvas canvas = button.GetComponentInParent<Canvas>();
+        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPos, cam);
+    }
+    public void Activate()
+    {
+        if (overrideImage && imageObject != null && image != null)
+        {
+            Image imageComponent = imageObject.GetComponent<Image>();
+            if (imageComponent != null)
+            {
+                imageComponent.sprite = image;
+            }
+            else
+            {
+                Debug.LogWarning("No Image component found on ImageObject.");
+            }
+        }
+        GameObject positionObject = detectedObjectForPosition != null ? detectedObjectForPosition : gameObject;
+        GameObject rotationObject = detectedObjectForRotation != null ? detectedObjectForRotation : gameObject;
+        float posX = positionObject.transform.position.x;
+        float posY = positionObject.transform.position.y;
+        float posZ = positionObject.transform.position.z;
+        float rotX = rotationObject.transform.rotation.eulerAngles.x;
+        float rotY = rotationObject.transform.rotation.eulerAngles.y;
+        float rotZ = rotationObject.transform.rotation.eulerAngles.z;
+        if (roundValues)
+        {
+            posX = Mathf.Floor(posX);
+            posY = Mathf.Floor(posY);
+            posZ = Mathf.Floor(posZ);
+            rotX = Mathf.Floor(rotX);
+            rotY = Mathf.Floor(rotY);
+            rotZ = Mathf.Floor(rotZ);
+        }
+        string currentText = text;
+        currentText = currentText.Replace("{x}", posX.ToString());
+        currentText = currentText.Replace("{y}", posY.ToString());
+        currentText = currentText.Replace("{z}", posZ.ToString());
+        currentText = currentText.Replace("{rx}", rotX.ToString());
+        currentText = currentText.Replace("{ry}", rotY.ToString());
+        currentText = currentText.Replace("{rz}", rotZ.ToString());
+        if (statObject != null)
+        {
+            var statCreator = statObject.GetComponent<StatCreator>();
+            if (statCreator != null)
+            {
+                System.Text.RegularExpressions.MatchCollection matches = 
+                    System.Text.RegularExpressions.Regex.Matches(currentText, @"\{stat:(\w+)\}");
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    string fullTag = match.Value;
+                    string statName = match.Groups[1].Value;
+                    var stat = System.Array.Find(statCreator.stats, s => s.statName == statName);
+                    if (stat != null)
+                    {
+                        string statValue = "";
+                        switch (stat.statType)
+                        {
+                            case StatType.Int:
+                                statValue = stat.intValue.ToString();
+                                break;
+                            case StatType.Float:
+                                statValue = stat.floatValue.ToString("0.##");
+                                break;
+                            case StatType.String:
+                                statValue = stat.stringValue;
+                                break;
+                        }
+                        currentText = currentText.Replace(fullTag, statValue);
+                    }
+                }
+            }
+        }
+        bool matchedAny = false;
+        if (textObject != null)
+        {
+            TMP_Text textComp = textObject.GetComponent<TMP_Text>();
+            if (textComp != null)
+            {
+                string textInComponent = textComp.text;
+                foreach (var settings in textMatchSettings)
+                {
+                    if (textInComponent == settings.expectedText)
+                    {
+                        matchedAny = true;
+                        if (settings.reachedComponent != null && !string.IsNullOrEmpty(settings.reachedMethod))
+                        {
+                            InvokeMethod(settings.reachedComponent, settings.reachedMethod);
+                        }
+                    }
+                    else
+                    {
+                        if (settings.notReachedComponent != null && !string.IsNullOrEmpty(settings.notReachedMethod))
+                        {
+                            InvokeMethod(settings.notReachedComponent, settings.notReachedMethod);
+                        }
+                    }
+                }
+            }
+        }
+        if (!matchedAny && defaultNotMatchedComponent != null && !string.IsNullOrEmpty(defaultNotMatchedMethod))
+        {
+            InvokeMethod(defaultNotMatchedComponent, defaultNotMatchedMethod);
+        }
+
+        if (overrideText && textObject != null)
+        {
+            if (string.IsNullOrEmpty(currentText))
+            {
+                currentText = "";
+            }
+            TMP_Text textComponent = textObject.GetComponent<TMP_Text>();
+            if (textComponent != null)
+            {
+                if (exponential)
+                {
+                    StartCoroutine(ExponentialTextTyping(textComponent, currentText));
+                }
+                else
+                {
+                    textComponent.text = currentText;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No TextMeshPro component found on TextObject.");
+            }
+        }
+    }
+    private void InvokeMethod(MonoBehaviour component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            component.Invoke(methodName, 0f);
+        }
+        else
+        {
+            Debug.LogWarning("Component or method name is invalid for invocation.");
+        }
+    }
+    private IEnumerator ExponentialTextTyping(TMP_Text textComponent, string textToType)
+    {
+        textComponent.text = "";
+        for (int i = 0; i < textToType.Length; i++)
+        {
+            textComponent.text += textToType[i];
+            float delay = exponentialCharTime * Mathf.Pow(1.2f, i);
+            yield return new WaitForSeconds(delay);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
