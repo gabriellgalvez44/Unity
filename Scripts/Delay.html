@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Delay.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Delay.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1KnOcpOQNVjGjMmAXSePeOjZ8N7PrvLKx')">Download</button>
+<h1>Version 2:</h1>
+This script is used to delay actions
+<h1>Method names:</h1>
+Activate
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Delay : MonoBehaviour
+{
+    public MonoBehaviour targetComponent;
+    public string methodName;
+    public float delay = 0f;
+    public void Activate()
+    {
+        StartCoroutine(InvokeMethod());
+    }
+    private IEnumerator InvokeMethod()
+    {
+        yield return new WaitForSeconds(delay);
+        
+        if (targetComponent != null && !string.IsNullOrEmpty(methodName))
+        {
+            targetComponent.Invoke(methodName, 0f);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
