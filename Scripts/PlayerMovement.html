@@ -11,7 +11,7 @@
 <left>
 <h1>PlayerMovement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1d8swOtqjk1MAse-dpjCyam07MxvZEDX1')">Download</button>
-<h1>Version 15:</h1>
+<h1>Version 16:</h1>
 This script is used to make an object considered the player and add keybinding controls for moving, advanced movement, and etc...
 <h1>Method names:</h1>
 (There are none)
@@ -53,6 +53,7 @@ public class PlayerMovement : MonoBehaviour
     private int maxStamina;
     private Coroutine rechargeDelayCoroutine;
     private Coroutine rechargeCoroutine;
+    private StatCreator statCreator;
     [Header("Walking")]
     public float speed = 4.0f;
     public MonoBehaviour walkTargetComponent;
@@ -94,12 +95,15 @@ public class PlayerMovement : MonoBehaviour
     private int remainingAirJumps;
     private Vector3 originalPosition;
     [Header("Player event interactions")]
-    [Header("On landing behavior")]
+    [Header("On land behavior")]
     public MonoBehaviour landTargetComponent;
     public string landMethodName;
     [Header("On still behavior")]
     public MonoBehaviour stillTargetComponent;
     public string stillMethodName;
+    [Header("While falling behavior")]
+    public MonoBehaviour fallingTargetComponent;
+    public string fallingMethodName;
     [Header("On wallRun enter behavior")]
     public MonoBehaviour wallRunEnterTargetComponent;
     public string wallRunEnterMethodName;
@@ -123,27 +127,6 @@ public class PlayerMovement : MonoBehaviour
         originalSprintSpeed = sprintingSpeed;
         originalPosition = transform.position;
         ResetAirJumps();
-        if (statObject == null)
-        {
-            Debug.LogWarning("StatObject is not assigned.");
-            return;
-        }
-        StatCreator statCreator = statObject.GetComponent<StatCreator>();
-        if (statCreator == null)
-        {
-            Debug.LogWarning("No StatCreator component found on statObject.");
-            return;
-        }
-        foreach (var stat in statCreator.stats)
-        {
-            if (stat.statName == staminaStatName && stat.statType == StatType.Int)
-            {
-                staminaStatRef = stat;
-                stamina = stat.intValue;
-                maxStamina = stat.noMaxLimit ? int.MaxValue : Mathf.FloorToInt(stat.maxLimit);
-                break;
-            }
-        }
     }
     private void ResetAirJumps()
     {
@@ -151,6 +134,16 @@ public class PlayerMovement : MonoBehaviour
     }
     private void Update()
     {
+        statCreator = statObject.GetComponent<StatCreator>();
+        foreach (var stat in statCreator.stats)
+        {
+            if (stat.statName == staminaStatName && stat.statType == StatType.Int)
+            {
+                staminaStatRef = stat;
+                stamina = stat.intValue;
+                maxStamina = stat.noMaxLimit ? int.MaxValue : Mathf.FloorToInt(stat.maxLimit);
+            }
+        }
         if (allowSprint)
         {
             if (sprintingSpeed != originalSprintSpeed && !stored3)
@@ -187,27 +180,27 @@ public class PlayerMovement : MonoBehaviour
     {
         if (stopExternalAccelleration)
         {
-            rb.linearVelocity = Vector3.zero;
+            rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
         if (!gravity)
+        {
+            if (Input.GetKey(KeyCode.Space) && !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl))
             {
-                if (Input.GetKey(KeyCode.Space) && !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl))
-                {
-                    Vector3 currentVelocity = rb.linearVelocity;
-                    rb.linearVelocity = new Vector3(currentVelocity.x, jumpAcceleration, currentVelocity.z);
-                }
-                else if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
-                {
-                    Vector3 currentVelocity = rb.linearVelocity;
-                    rb.linearVelocity = new Vector3(currentVelocity.x, -jumpAcceleration, currentVelocity.z);
-                }
-                else
-                {
-                    Vector3 currentVelocity = rb.linearVelocity;
-                    rb.linearVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
-                }
+                Vector3 currentVelocity = rb.velocity;
+                rb.velocity = new Vector3(currentVelocity.x, jumpAcceleration, currentVelocity.z);
             }
+            else if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            {
+                Vector3 currentVelocity = rb.velocity;
+                rb.velocity = new Vector3(currentVelocity.x, -jumpAcceleration, currentVelocity.z);
+            }
+            else
+            {
+                Vector3 currentVelocity = rb.velocity;
+                rb.velocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+            }
+        }
         HandleMovement();
         if (!IsGrounded())
         {
@@ -373,6 +366,20 @@ public class PlayerMovement : MonoBehaviour
             dashedTargetComponent.Invoke(dashedMethodName, 0f);
         }
     }
+    private void activateLandAction()
+    {
+        if (landTargetComponent != null && !string.IsNullOrEmpty(landMethodName))
+        {
+            landTargetComponent.Invoke(landMethodName, 0f);
+        }
+    }
+    private void activateFallingAction()
+    {
+        if (fallingTargetComponent != null && !string.IsNullOrEmpty(fallingMethodName))
+        {
+            fallingTargetComponent.Invoke(fallingMethodName, 0f);
+        }
+    }
     private void HandleMovement()
     {
         if (!isWallRunning)
@@ -403,11 +410,11 @@ public class PlayerMovement : MonoBehaviour
                 }
                 if (!gravity)
                 {
-                    rb.linearVelocity = new Vector3(moveHorizontal * currentSpeed, moveVertical * currentSpeed, 0);
+                    rb.velocity = new Vector3(moveHorizontal * currentSpeed, moveVertical * currentSpeed, 0);
                 }
                 else
                 {
-                    rb.linearVelocity = new Vector3(moveHorizontal * currentSpeed, rb.linearVelocity.y, 0);
+                    rb.velocity = new Vector3(moveHorizontal * currentSpeed, rb.velocity.y, 0);
                 }
             }
             else
@@ -431,7 +438,7 @@ public class PlayerMovement : MonoBehaviour
                 {
                     if (!gravity)
                     {
-                        rb.linearVelocity = new Vector3(0, currentSpeed, 0);
+                        rb.velocity = new Vector3(0, currentSpeed, 0);
                     }
                 }
                 else
@@ -453,7 +460,7 @@ public class PlayerMovement : MonoBehaviour
             }
             else
             {
-                rb.linearVelocity = Vector3.zero;
+                rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
         }
@@ -530,7 +537,7 @@ public class PlayerMovement : MonoBehaviour
         this.wallNormal = wallNormal;
         rb.useGravity = false;
         wallRunStartPosition = transform.position;
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
         Vector3 wallDirection = Vector3.Cross(wallNormal, Vector3.up);
         isOnRightSide = Vector3.Dot(cameraTransform.right, wallNormal) < 0;
         originalTilt = cameraTransform.localEulerAngles.z;
@@ -560,7 +567,7 @@ public class PlayerMovement : MonoBehaviour
             if (stamina < jumpStaminaUsage && staminaStatRef != null) return;
             if (isWallRunning)
             {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
                 Vector3 jumpDirection = (Vector3.up + wallNormal).normalized;
                 rb.AddForce(jumpDirection * jumpAcceleration, ForceMode.VelocityChange);
                 StopWallRunning();
@@ -568,14 +575,14 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (IsGrounded())
             {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
                 rb.AddForce(Vector3.up * jumpAcceleration, ForceMode.VelocityChange);
                 ResetAirJumps();
                 activateJumpAction();
             }
             else if (remainingAirJumps > 0)
             {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
                 rb.AddForce(Vector3.up * jumpAcceleration, ForceMode.VelocityChange);
                 remainingAirJumps--;
                 activateAirJumpAction();
@@ -594,10 +601,7 @@ public class PlayerMovement : MonoBehaviour
             if (!grounded)
             {
                 grounded = true;
-                if (landTargetComponent != null && !string.IsNullOrEmpty(landMethodName))
-                {
-                    landTargetComponent.Invoke(landMethodName, 0f);
-                }
+                activateLandAction();
             }
         }
     }
