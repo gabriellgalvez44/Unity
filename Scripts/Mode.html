@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Mode.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Mode.cs</h1>
+<button onclick="window.open('')">Download</button>
+<h1>Version 4:</h1>
+This script is used to enter certain modes for the object such as Disable/Enable controls, and/or typing mode which is used to typing messages in a UI of some sort!
+<h1>Method names:</h1>
+Activate
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+
+public class Mode : MonoBehaviour
+{
+    public enum ControlMode
+    {
+        EnabledControls,
+        DisabledControls,
+        TypingMode
+    }
+    [System.Serializable]
+    public class ModeSetting
+    {
+        public MonoBehaviour component;
+        public ControlMode mode;
+        public GameObject textObject;
+        public MonoBehaviour escapeKeyComponent;
+        public string escapeKeyMethod;
+        public MonoBehaviour enterKeyComponent;
+        public string enterKeyMethod;
+        private KeyCode typingModeKeybind;
+    }
+    public ModeSetting[] modeSettings;
+    private bool isTypingModeActive = false;
+    private float typingModeStartTime = 0f;
+    private float typingModeDelay = 0.1f;
+    private string typedText = "";
+    public void Activate()
+    {
+        foreach (var setting in modeSettings)
+        {
+            switch (setting.mode)
+            {
+                case ControlMode.EnabledControls:
+                    EnableControls(setting.component);
+                    break;
+                case ControlMode.DisabledControls:
+                    DisableControls(setting.component);
+                    break;
+                case ControlMode.TypingMode:
+                    ActivateTypingMode(setting);
+                    break;
+            }
+        }
+    }
+    private void EnableControls(MonoBehaviour component)
+    {
+        if (component != null)
+        {
+            component.enabled = true;
+        }
+    }
+    private void DisableControls(MonoBehaviour component)
+    {
+        if (component != null)
+        {
+            component.enabled = false;
+        }
+    }
+    private void ActivateTypingMode(ModeSetting setting)
+    {
+        if (!isTypingModeActive)
+        {
+            if (setting.textObject != null)
+            {
+                TMP_Text typingText = setting.textObject.GetComponent<TMP_Text>();
+                if (typingText != null)
+                {
+                    typedText = typingText.text;
+                    isTypingModeActive = true;
+                    typingModeStartTime = Time.time;
+                }
+            }
+        }
+    }
+    private void HandleTypingInput(TMP_Text typingText)
+    {
+        if (isTypingModeActive && Time.time - typingModeStartTime > typingModeDelay)
+        {
+            foreach (char c in Input.inputString)
+            {
+                if (!Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl) &&
+                    !Input.GetKey(KeyCode.LeftAlt) && !Input.GetKey(KeyCode.RightAlt) &&
+                    !Input.GetKey(KeyCode.Tab) && !Input.GetKey(KeyCode.Escape) &&
+                    !Input.GetKey(KeyCode.Return) && char.ToString(c) != "\u0008")
+                {
+                    typedText += c;
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.Backspace) && typedText.Length > 0)
+            {
+                typedText = typedText.Substring(0, typedText.Length - 1);
+            }
+            typingText.text = typedText;
+            if (Input.GetKeyDown(KeyCode.Escape) && typingText != null)
+            {
+                foreach (var setting in modeSettings)
+                {
+                    if (setting.escapeKeyComponent != null)
+                    {
+                        InvokeMethod(setting.escapeKeyComponent, setting.escapeKeyMethod);
+                    }
+                }
+                isTypingModeActive = false;
+            }
+            if (Input.GetKeyDown(KeyCode.Return) && typingText != null)
+            {
+                foreach (var setting in modeSettings)
+                {
+                    if (setting.enterKeyComponent != null)
+                    {
+                        InvokeMethod(setting.enterKeyComponent, setting.enterKeyMethod);
+                    }
+                }
+                isTypingModeActive = false;
+            }
+        }
+    }
+    private void InvokeMethod(MonoBehaviour component, string methodName)
+    {
+        if (component != null && !string.IsNullOrEmpty(methodName))
+        {
+            component.Invoke(methodName, 0f);
+        }
+    }
+    private void Update()
+    {
+        foreach (var setting in modeSettings)
+        {
+            if (setting.mode == ControlMode.TypingMode && setting.textObject != null)
+            {
+                TMP_Text typingText = setting.textObject.GetComponent<TMP_Text>();
+                if (typingText != null)
+                {
+                    HandleTypingInput(typingText);
+                }
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
