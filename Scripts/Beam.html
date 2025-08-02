@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Beam.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Lj4V4m5wakBDzvadaZh8NflUCEIj8mJ9')">Download</button>
+<h1>Version 4:</h1>
+This script is used to a beam going infinitely vertical, horizontal, or within a starting to ending point which the ending point can be redefined the way you want it to!
+<h1>Method names:</h1>
+StartBeam<br>
+StopBeam
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Beam : MonoBehaviour
+{
+    public enum Direction { Vertical, Horizontal, TwoPoints }
+    [Header("Creation")]
+    public Direction direction = Direction.Vertical;
+    public Color color = Color.white;
+    public float thickness = 0.1f;
+    public bool startAutomatically = false;
+    public bool isShiny = false;
+    public LayerMask beamLayerMask;
+    [Header("Points")]
+    public GameObject pointA;
+    public GameObject pointB;
+    private GameObject beamObject;
+    private Material beamMaterial;
+    [Header("Use Closest")]
+    public bool useProximity = false;
+    public enum ProximityMode { Closest, Straight }
+    public ProximityMode proximityMode = ProximityMode.Closest;
+    public LayerMask proximityLayerMask;
+    private void Start()
+    {
+        CreateBeam();
+        if (startAutomatically)
+        {
+            StartBeam();
+        }
+    }
+    public void StartBeam()
+    {
+        if (beamObject != null)
+        {
+            beamObject.SetActive(true);
+        }
+    }
+    public void StopBeam()
+    {
+        if (beamObject != null)
+        {
+            beamObject.SetActive(false);
+        }
+    }
+    private void FixedUpdate()
+    {
+        if (beamObject != null)
+        {
+            if (direction == Direction.Vertical)
+            {
+                UpdateVerticalBeam();
+            }
+            else if (direction == Direction.Horizontal)
+            {
+                UpdateHorizontalBeam();
+            }
+            else if (direction == Direction.TwoPoints)
+            {
+                if (useProximity)
+                {
+                    if (proximityMode == ProximityMode.Closest)
+                    {
+                        UpdateBeamClosest();
+                    }
+                    else if (proximityMode == ProximityMode.Straight)
+                    {
+                        UpdateBeamStraight();
+                    }
+                }
+                else
+                {
+                    UpdateBeamBetweenPoints();
+                }
+            }
+        }
+    }
+    private void UpdateBeamClosest()
+    {
+        if (pointA == null) return;
+        Collider[] hits = Physics.OverlapSphere(pointA.transform.position, 1000f, proximityLayerMask);
+        GameObject closest = null;
+        float closestDistance = float.MaxValue;
+        foreach (Collider hit in hits)
+        {
+            if (hit.gameObject == pointA) continue;
+            float dist = Vector3.Distance(pointA.transform.position, hit.transform.position);
+            if (dist < closestDistance)
+            {
+                closest = hit.gameObject;
+                closestDistance = dist;
+            }
+        }
+        if (closest != null)
+        {
+            pointB = closest;
+            UpdateBeamBetweenPoints();
+        }
+    }
+    private bool hasHit = false;
+    private Vector3 lastOrigin;
+    private void UpdateBeamStraight()
+    {
+        if (pointA == null || beamObject == null) return;
+        Vector3 origin = pointA.transform.position;
+        if (origin != lastOrigin)
+        {
+            hasHit = false;
+            lastOrigin = origin;
+        }
+        if (!hasHit)
+        {
+            Vector3 direction = pointA.transform.forward;
+            if (Physics.Raycast(origin, direction, out RaycastHit hit, 1000f, ~proximityLayerMask, QueryTriggerInteraction.Ignore))
+            {
+                Vector3 diff = hit.point - origin;
+                float dist = diff.magnitude / 2f;
+                beamObject.transform.position = origin + diff / 2f;
+                beamObject.transform.up = diff.normalized;
+                beamObject.transform.localScale = new Vector3(thickness, dist, thickness);
+                hasHit = true;
+            }
+            else
+            {
+                Vector3 farPoint = origin + direction * 1000f;
+                Vector3 diff = farPoint - origin;
+                float dist = diff.magnitude / 2f;
+                beamObject.transform.position = origin + diff / 2f;
+                beamObject.transform.up = diff.normalized;
+                beamObject.transform.localScale = new Vector3(thickness, dist, thickness);
+                hasHit = true;
+            }
+        }
+    }
+    private void CreateBeam()
+    {
+        beamObject = new GameObject("Beam");
+        var beamRenderer = beamObject.AddComponent<MeshRenderer>();
+        var beamFilter = beamObject.AddComponent<MeshFilter>();
+        var beamCollider = beamObject.AddComponent<BoxCollider>();
+        beamCollider.isTrigger = true;
+        beamMaterial = new Material(Shader.Find("Standard"));
+        beamMaterial.color = color;
+        beamRenderer.material = beamMaterial;
+        beamObject.layer = Mathf.RoundToInt(Mathf.Log(beamLayerMask.value, 2));
+        if (direction == Direction.Vertical)
+        {
+            CreateVerticalBeam(beamObject, beamFilter);
+        }
+        else if (direction == Direction.Horizontal)
+        {
+            CreateHorizontalBeam(beamObject, beamFilter);
+        }
+        else if (direction == Direction.TwoPoints)
+        {
+            if (pointA != null && pointB != null)
+            {
+                CreateBeamBetweenPoints(beamObject, beamFilter, pointA.transform.position, pointB.transform.position);
+            }
+            else
+            {
+                Debug.LogWarning("Point A or Point B is not assigned.");
+            }
+        }
+        if (isShiny)
+        {
+            beamMaterial.SetFloat("_Metallic", 1f);
+            beamMaterial.SetFloat("_Smoothness", 1f);
+        }
+        beamObject.SetActive(false);
+        var beamRendererComp = beamObject.GetComponent<MeshRenderer>();
+        beamRendererComp.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        beamFilter.mesh = CreateCylinderMesh();
+    }
+    private void UpdateVerticalBeam()
+    {
+        beamObject.transform.position = transform.position;
+        beamObject.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+    }
+    private void UpdateHorizontalBeam()
+    {
+        beamObject.transform.position = transform.position;
+        beamObject.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+    }
+    private void UpdateBeamBetweenPoints()
+    {
+        if (pointA != null && pointB != null)
+        {
+            Vector3 direction = pointB.transform.position - pointA.transform.position;
+            float distance = direction.magnitude / 2;
+            beamObject.transform.position = pointA.transform.position + direction / 2;
+            beamObject.transform.up = direction.normalized;
+            beamObject.transform.localScale = new Vector3(thickness, distance, thickness);
+        }
+    }
+    private Mesh CreateCylinderMesh()
+    {
+        Mesh cylinderMesh = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
+        return cylinderMesh;
+    }
+    private void CreateBeamBetweenPoints(GameObject beam, MeshFilter meshFilter, Vector3 start, Vector3 end)
+    {
+        Mesh mesh = new Mesh();
+        Vector3 direction = end - start;
+        float distance = direction.magnitude;
+        mesh.vertices = new Vector3[]
+        {
+            start,
+            new Vector3(start.x + thickness, start.y / 2, start.z),
+            end,
+            new Vector3(end.x + thickness, end.y, end.z)
+        };
+        mesh.triangles = new int[] {
+            0, 1, 2,
+            1, 2, 3
+        };
+        mesh.RecalculateNormals();
+        meshFilter.mesh = mesh;
+    }
+    private void CreateVerticalBeam(GameObject beamObject, MeshFilter meshFilter)
+    {
+        beamObject.transform.localScale = new Vector3(thickness, 1000f, thickness);
+        beamObject.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+    }
+    private void CreateHorizontalBeam(GameObject beamObject, MeshFilter meshFilter)
+    {
+        beamObject.transform.localScale = new Vector3(1000f, thickness, thickness);
+        beamObject.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
