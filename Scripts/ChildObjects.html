@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>ChildObjects.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1lDoFN4x9Hnu1nDkP8GsOqY3KuG6fmRVr')">Download</button>
+<h1>Version 2:</h1>
+This script is used to make objects follow with the camera like you're holding/wearing the thing
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ChildObjects : MonoBehaviour
+{
+    public Transform cameraTransform;
+    public GameObject[] childObjects;
+    public float offsetX = 0f;
+    public float offsetY = 0f;
+    public float offsetZ = 0f;
+    public float rotationX = 0f;
+    public float rotationY = 0f;
+    public float rotationZ = 0f;
+    private Vector3 originalPosition;
+    void FixedUpdate()
+    {
+        UpdateChildObjects();
+    }
+    private void UpdateChildObjects()
+    {
+        foreach (GameObject child in childObjects)
+        {
+            if (child != null)
+            {
+                Vector3 offset = cameraTransform.right * offsetX + cameraTransform.up * offsetY + cameraTransform.forward * offsetZ;
+                child.transform.position = transform.position + offset;
+                Quaternion rotationOffset = Quaternion.Euler(rotationX, rotationY, rotationZ);
+                child.transform.rotation = cameraTransform.rotation * rotationOffset;
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
