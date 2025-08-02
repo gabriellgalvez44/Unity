@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - VoiceInput.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>VoiceInput.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Cx5te6KDfu7a673JynbV4XPXOGV6YxKj')">Download</button>
+<h1>Version 1:</h1>
+This script is used to insert your microphone to an object
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class VoiceInput : MonoBehaviour
+{
+    [Header("Voice Input Settings")]
+    public InputDevice inputDevice = InputDevice.DefaultInput;
+    public float range = 10f;
+    public bool useProximity = true;
+    public bool speakInDirection = false;
+    public bool loudnessInfluenceDistance = false;
+    public bool muted = false;
+    private AudioSource audioSource;
+    private string currentDevice;
+    private AudioClip microphoneClip;
+    private float initialVolume = 1f;
+    private Camera cameraComponent;
+    [HideInInspector]
+    public float GetCurrentLoudness = 0f;
+    public enum InputDevice
+    {
+        DefaultInput,
+        Speaker
+    }
+    private void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        if (Microphone.devices.Length == 0)
+        {
+            Debug.LogError("No microphone found.");
+            return;
+        }
+        currentDevice = inputDevice == InputDevice.DefaultInput ? Microphone.devices[0] : "Speaker";
+        if (!Microphone.IsRecording(currentDevice))
+        {
+            microphoneClip = Microphone.Start(currentDevice, true, 10, 44100);
+        }
+        cameraComponent = GetComponent<Camera>();
+    }
+    private void Update()
+    {
+        if (!useProximity)
+        {
+            range = 0;
+        }
+        if (microphoneClip == null) return;
+        if (muted)
+        {
+            GetCurrentLoudness = 0f;
+        }
+        else
+        {
+            GetCurrentLoudness = GetLoudnessFromMicrophone() * 100;
+            GetCurrentLoudness = Mathf.Clamp(GetCurrentLoudness, 0f, 1000000f);
+        }
+        if (loudnessInfluenceDistance)
+        {
+            if (useProximity)
+            {
+                range = Mathf.Lerp(0f, 200f, Mathf.Clamp01(GetCurrentLoudness / 100f));
+            }
+        }
+        float distance = Vector3.Distance(transform.position, Camera.main.transform.position);
+        float volume = Mathf.Clamp01(1f - Mathf.Clamp01(distance / range));
+        if (speakInDirection)
+        {
+            Vector3 direction = (Camera.main.transform.position - transform.position).normalized;
+            if (cameraComponent != null)
+            {
+                if (Vector3.Dot(cameraComponent.transform.forward, direction) > 0)
+                {
+                    audioSource.volume = volume;
+                }
+                else
+                {
+                    audioSource.volume = 0f;
+                }
+            }
+            else
+            {
+                if (Vector3.Dot(transform.forward, direction) > 0)
+                {
+                    audioSource.volume = volume;
+                }
+                else
+                {
+                    audioSource.volume = 0f;
+                }
+            }
+        }
+        else
+        {
+            audioSource.volume = volume;
+        }
+        if (!audioSource.isPlaying)
+        {
+            audioSource.clip = microphoneClip;
+            audioSource.loop = true;
+            audioSource.Play();
+        }
+    }
+    private float GetLoudnessFromMicrophone()
+    {
+        float[] samples = new float[microphoneClip.samples];
+        microphoneClip.GetData(samples, 0);
+        float loudness = 0f;
+        foreach (var sample in samples)
+        {
+            loudness += Mathf.Abs(sample);
+        }
+        return Mathf.Lerp(0f, 100f, loudness / samples.Length);
+    }
+    private void OnApplicationQuit()
+    {
+        if (Microphone.IsRecording(currentDevice))
+        {
+            Microphone.End(currentDevice);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
