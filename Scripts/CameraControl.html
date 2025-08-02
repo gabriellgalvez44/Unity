@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>CameraControl.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1M-z1UOEDCnwFJ3L9emeYT0nmFCon3MTX')">Download</button>
+<h1>Version 7:</h1>
+This script is used to zoom in/out, screenshot what you're viewing, and fix a position and maybe include fixing the rotation to another objects!
+<h1>Method names:</h1>
+Screenshot<br>
+Zoom<br>
+Fix<br>
+Release
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.IO;
+
+public class CameraControl : MonoBehaviour
+{
+    [Header("Screenshot settings")]
+    public bool autoOpen = true;
+    [Header("Zoom settings")]
+    public float targetDistance = 0f;
+    public float transitionTime = 1f;
+    private float originFOV;
+    private float currentFOV;
+    private float targetFOV;
+    private float timeElapsed = 0f;
+    private bool isZooming = false;
+    [Header("Fixed camera settings")]
+    public CameraRotator cameraRotator;
+    public GameObject objectToUse;
+    public bool lockRotation = true;
+    public GameObject releaseParent;
+    private bool isFixed = false;
+    private Camera mainCamera;
+    void Start()
+    {
+        mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            originFOV = mainCamera.fieldOfView;
+            currentFOV = originFOV;
+            targetFOV = currentFOV;
+        }
+    }
+    void Update()
+    {
+        if (isZooming)
+        {
+            timeElapsed += Time.deltaTime;
+            float t = timeElapsed / transitionTime;
+            mainCamera.fieldOfView = Mathf.Lerp(currentFOV, targetFOV, t);
+            if (t >= 1f)
+            {
+                mainCamera.fieldOfView = targetFOV;
+                isZooming = false;
+            }
+        }
+        if (isFixed && lockRotation)
+        {
+            cameraRotator.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        }
+    }
+    public void Fix()
+    {
+        if (cameraRotator == null || objectToUse == null)
+            return;
+        cameraRotator.transform.SetParent(null);
+        cameraRotator.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        cameraRotator.transform.localPosition = Vector3.zero;
+        if (lockRotation)
+            cameraRotator.canRotate = false;
+        cameraRotator.transform.SetParent(objectToUse.transform);
+        cameraRotator.transform.localRotation = Quaternion.Euler(0f, 0f, 0f); 
+        isFixed = true;
+    }
+    public void Release()
+    {
+        if (cameraRotator == null)
+            return;
+        cameraRotator.transform.SetParent(releaseParent.transform);
+        cameraRotator.canRotate = true;
+        isFixed = false;
+    }
+    public void Screenshot()
+    {
+        if (mainCamera == null) return;
+        RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        mainCamera.targetTexture = renderTexture;
+        mainCamera.Render();
+        RenderTexture.active = renderTexture;
+        Texture2D cameraScreenshot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        cameraScreenshot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        cameraScreenshot.Apply();
+        mainCamera.targetTexture = null;
+        RenderTexture.active = null;
+        Destroy(renderTexture);
+        SaveScreenshot(cameraScreenshot);
+    }
+    private void SaveScreenshot(Texture2D screenshot)
+    {
+        string downloadsPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), "Downloads");
+        string filePath = Path.Combine(downloadsPath, "Screenshot.png");
+        File.WriteAllBytes(filePath, screenshot.EncodeToPNG());
+        Debug.Log($"Screenshot saved to: {filePath}");
+#if UNITY_EDITOR
+        if (autoOpen)
+        {
+            Application.OpenURL($"file://{filePath}");
+        }
+#elif UNITY_STANDALONE
+        if (autoOpen)
+        {
+            Application.OpenURL($"file://{filePath}");
+        }
+#endif
+    }
+    public void Zoom()
+    {
+        currentFOV = mainCamera.fieldOfView;
+        if (targetDistance > 0)
+        {
+            targetFOV = originFOV - (targetDistance * 20f);
+        }
+        else if (targetDistance < 0)
+        {
+            targetFOV = originFOV + (Mathf.Abs(targetDistance) * 20f);
+        }
+        else
+        {
+            targetFOV = originFOV;
+        }
+        timeElapsed = 0f;
+        isZooming = true;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
