@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - StatComparator.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>StatComparator.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1QiOnBuu_vr2NR0bcRJzHWdIxTX70pfR7')">Download</button>
+<h1>Version 1:</h1>
+This script allows you to compare stats to a value and/or to eachother and do stuff when the requirements are met, or not all met
+<h1>Method names:</h1>
+Compare
+</left>
+<right>
+<textarea readonly>using UnityEngine;
+using System;
+using System.Reflection;
+
+public enum Comparator
+{
+    Equal,
+    NotEqual,
+    LessThan,
+    NotLessThan,
+    GreaterThan,
+    NotGreaterThan,
+    LessThanOrEqual,
+    NotLessThanOrEqual,
+    GreaterThanOrEqual,
+    NotGreaterThanOrEqual
+}
+[System.Serializable]
+public class StatLogic
+{
+    public string statA;
+    public Comparator comparator;
+    public bool compareToStat = false;
+    public string statB;
+    public string stringValue;
+    public float numberValue;
+}
+public class StatComparator : MonoBehaviour
+{
+    public GameObject targetObject;
+    private StatCreator targetStatCreator;
+    public StatLogic[] logicChain;
+    public MonoBehaviour onSuccessComponent;
+    public string onSuccessMethodName;
+    public MonoBehaviour onFailureComponent;
+    public string onFailureMethodName;
+    void OnValidate()
+    {
+        if (targetObject != null)
+        {
+            targetStatCreator = targetObject.GetComponent<StatCreator>();
+        }
+        else
+        {
+            targetStatCreator = null;
+        }
+    }
+    public void Compare()
+    {
+        if (targetStatCreator == null)
+        {
+            Debug.LogWarning("No StatCreator found on the target object.");
+            return;
+        }
+        foreach (var logic in logicChain)
+        {
+            var statA = Array.Find(targetStatCreator.stats, s => s.statName == logic.statA);
+            if (statA == null)
+            {
+                Debug.LogWarning($"Stat '{logic.statA}' not found.");
+                Execute(onFailureComponent, onFailureMethodName);
+                return;
+            }
+            object valueA = GetStatValue(statA);
+            object valueB;
+            if (logic.compareToStat)
+            {
+                var statB = Array.Find(targetStatCreator.stats, s => s.statName == logic.statB);
+                if (statB == null)
+                {
+                    Debug.LogWarning($"Stat '{logic.statB}' not found.");
+                    Execute(onFailureComponent, onFailureMethodName);
+                    return;
+                }
+                valueB = GetStatValue(statB);
+            }
+            else
+            {
+                valueB = statA.statType == StatType.String ? (object)logic.stringValue : (object)logic.numberValue;
+            }
+            if (!CompareValues(valueA, valueB, logic.comparator, statA.statType))
+            {
+                Execute(onFailureComponent, onFailureMethodName);
+                return;
+            }
+        }
+        Execute(onSuccessComponent, onSuccessMethodName);
+    }
+    object GetStatValue(Stat stat)
+    {
+        switch (stat.statType)
+        {
+            case StatType.Int: return stat.intValue;
+            case StatType.Float: return stat.floatValue;
+            case StatType.String: return stat.stringValue;
+            default: return null;
+        }
+    }
+    bool CompareValues(object a, object b, Comparator op, StatType type)
+    {
+        if (type == StatType.String)
+        {
+            string sa = a as string;
+            string sb = b as string;
+            switch (op)
+            {
+                case Comparator.Equal: return sa == sb;
+                case Comparator.NotEqual: return sa != sb;
+                default:
+                    Debug.LogWarning("Invalid comparator for string type.");
+                    return false;
+            }
+        }
+        else
+        {
+            float fa = Convert.ToSingle(a);
+            float fb = Convert.ToSingle(b);
+            switch (op)
+            {
+                case Comparator.Equal: return fa == fb;
+                case Comparator.NotEqual: return fa != fb;
+                case Comparator.LessThan: return fa < fb;
+                case Comparator.NotLessThan: return !(fa < fb);
+                case Comparator.GreaterThan: return fa > fb;
+                case Comparator.NotGreaterThan: return !(fa > fb);
+                case Comparator.LessThanOrEqual: return fa <= fb;
+                case Comparator.NotLessThanOrEqual: return !(fa <= fb);
+                case Comparator.GreaterThanOrEqual: return fa >= fb;
+                case Comparator.NotGreaterThanOrEqual: return !(fa >= fb);
+                default: return false;
+            }
+        }
+    }
+    void Execute(MonoBehaviour component, string methodName)
+    {
+        if (component == null || string.IsNullOrWhiteSpace(methodName)) return;
+        MethodInfo method = component.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (method != null)
+        {
+            method.Invoke(component, null);
+        }
+        else
+        {
+            Debug.LogWarning($"Method '{methodName}' not found on component '{component.GetType().Name}'");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
