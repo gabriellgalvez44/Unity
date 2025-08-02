@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Timer.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Timer.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1BWgnw8o-2UaSY0TjGbL41wWTFUUwW8Cq')">Download</button>
+<h1>Version 1:</h1>
+This script is used to add dimming and/or flickering to point lights for immersion and/or detail
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Timer : MonoBehaviour
+{
+    [System.Serializable]
+    public class TimerData
+    {
+        public string name;
+        public bool playOnStart = false;
+        public string time = "0:0:0:0:0";
+        public MonoBehaviour onFinishTargetComponent;
+        public string onFinishMethodName;
+        [HideInInspector] public string originalTimeString;
+        [HideInInspector] public bool pause;
+        [HideInInspector] public bool running;
+        [HideInInspector] public bool completed;
+        [HideInInspector] public float totalTimeInSeconds;
+        [HideInInspector] public float remainingTime;
+        [HideInInspector] public float elapsedTime;
+        public string RemainingTimeString => FormatTime(remainingTime);
+        public void ParseTime()
+        {
+            string[] timeUnits;
+            totalTimeInSeconds = 0;
+            if (time.Contains(":"))
+                timeUnits = time.Split(':');
+            else
+                timeUnits = new string[] { time };
+            switch (timeUnits.Length)
+            {
+                case 1:
+                    totalTimeInSeconds = float.Parse(timeUnits[0]);
+                    break;
+                case 2:
+                    totalTimeInSeconds = float.Parse(timeUnits[0]) * 60 + float.Parse(timeUnits[1]);
+                    break;
+                case 3:
+                    totalTimeInSeconds = float.Parse(timeUnits[0]) * 3600 + float.Parse(timeUnits[1]) * 60 + float.Parse(timeUnits[2]);
+                    break;
+                case 4:
+                    totalTimeInSeconds = float.Parse(timeUnits[0]) * 86400 + float.Parse(timeUnits[1]) * 3600 + float.Parse(timeUnits[2]) * 60 + float.Parse(timeUnits[3]);
+                    break;
+                case 5:
+                    totalTimeInSeconds = float.Parse(timeUnits[0]) * 31190400 + float.Parse(timeUnits[1]) * 86400 + float.Parse(timeUnits[2]) * 3600 + float.Parse(timeUnits[3]) * 60 + float.Parse(timeUnits[4]);
+                    break;
+                default:
+                    Debug.LogError("Invalid time format.");
+                    break;
+            }
+            remainingTime = totalTimeInSeconds;
+        }
+        public void InternalStart()
+        {
+            originalTimeString = time;
+            if (totalTimeInSeconds > 0)
+            {
+                running = true;
+                pause = false;
+                elapsedTime = 0;
+                completed = false;
+            }
+            else
+            {
+                Debug.LogError($"[{name}] Invalid time format or zero time.");
+            }
+        }
+        public void InternalStop()
+        {
+            running = false;
+            pause = false;
+            elapsedTime = 0;
+            remainingTime = totalTimeInSeconds;
+            time = originalTimeString;
+            Debug.Log($"[{name}] Timer Stopped and Reset.");
+        }
+        public void Update()
+        {
+            if (running && !pause && remainingTime > 0)
+            {
+                elapsedTime += Time.deltaTime;
+                remainingTime -= Time.deltaTime;
+                time = RemainingTimeString;
+                if (remainingTime <= 0)
+                {
+                    remainingTime = 0;
+                    running = false;
+                    completed = true;
+                    time = originalTimeString;
+                    if (onFinishTargetComponent != null && !string.IsNullOrEmpty(onFinishMethodName))
+                    {
+                        onFinishTargetComponent.Invoke(onFinishMethodName, 0f);
+                    }
+                    Debug.Log($"[{name}] Timer Completed!");
+                }
+            }
+            else if (running && !pause)
+            {
+                time = FormatTime(remainingTime);
+            }
+        }
+        private static string FormatTime(float timeInSeconds)
+        {
+            int years = Mathf.FloorToInt(timeInSeconds / 31190400);
+            timeInSeconds -= years * 31190400;
+            int days = Mathf.FloorToInt(timeInSeconds / 86400);
+            timeInSeconds -= days * 86400;
+            int hours = Mathf.FloorToInt(timeInSeconds / 3600);
+            timeInSeconds -= hours * 3600;
+            int minutes = Mathf.FloorToInt(timeInSeconds / 60);
+            int seconds = Mathf.FloorToInt(timeInSeconds % 60);
+            if (years > 0)
+                return $"{years}:{days:D2}:{hours:D2}:{minutes:D2}:{seconds:D2}";
+            else if (days > 0)
+                return $"{days}:{hours:D2}:{minutes:D2}:{seconds:D2}";
+            else if (hours > 0)
+                return $"{hours}:{minutes:D2}:{seconds:D2}";
+            else if (minutes > 0)
+                return $"{minutes}:{seconds:D2}";
+            else
+                return $"{seconds:D2}";
+        }
+    }
+    public List<TimerData> timers = new List<TimerData>();
+    void Awake()
+    {
+        foreach (var timer in timers)
+        {
+            timer.ParseTime();
+        }
+    }
+    void Start()
+    {
+        foreach (var timer in timers)
+        {
+            if (timer.playOnStart)
+            {
+                timer.InternalStart();
+            }
+        }
+    }
+    void Update()
+    {
+        foreach (var timer in timers)
+        {
+            timer.Update();
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
