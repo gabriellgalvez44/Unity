@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Date.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='../index.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Date.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=18jY2Zkbe_g9FiDyxQAEq_plK2KQlCzTA')">Download</button>
+<h1>Version 1:</h1>
+This script is used to detect details about the current date in your location and be able to set events in your game for the matching details
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Date : MonoBehaviour
+{
+    [Header("Current Date Info")]
+    public string date;
+    public string month;
+    public string day;
+    public string year;
+    public string dayOfWeek;
+    [Header("Event List")]
+    public List<Event> events = new List<Event>();
+    void Update()
+    {
+        System.DateTime now = System.DateTime.Now;
+        date = now.ToString("MM/dd/yyyy");
+        month = now.ToString("MM");
+        day = now.ToString("dd");
+        year = now.ToString("yyyy");
+        dayOfWeek = now.DayOfWeek.ToString();
+        foreach (var e in events)
+        {
+            bool isMatch = true;
+            if (!string.IsNullOrEmpty(e.date) && e.date != date)
+                isMatch = false;
+            if (!string.IsNullOrEmpty(e.month) && e.month != month)
+                isMatch = false;
+            if (!string.IsNullOrEmpty(e.day) && e.day != day)
+                isMatch = false;
+            if (!string.IsNullOrEmpty(e.year) && e.year != year)
+                isMatch = false;
+            if (!string.IsNullOrEmpty(e.dayOfWeek) &&
+                !string.Equals(e.dayOfWeek, dayOfWeek, System.StringComparison.OrdinalIgnoreCase))
+                isMatch = false;
+            if (isMatch)
+            {
+                if (e.matchComponent != null && !string.IsNullOrEmpty(e.matchMethodName))
+                    e.matchComponent.Invoke(e.matchMethodName, 0f);
+            }
+            else
+            {
+                if (e.unmatchComponent != null && !string.IsNullOrEmpty(e.unmatchMethodName))
+                    e.unmatchComponent.Invoke(e.unmatchMethodName, 0f);
+            }
+        }
+    }
+}
+[System.Serializable]
+public class Event
+{
+    [Header("Matching Date Criteria (Leave blank to ignore field)")]
+    public string date;
+    public string month;
+    public string day;
+    public string year;
+    public string dayOfWeek;
+    [Header("On Match")]
+    public MonoBehaviour matchComponent;
+    public string matchMethodName;
+    [Header("On Unmatch")]
+    public MonoBehaviour unmatchComponent;
+    public string unmatchMethodName;
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
