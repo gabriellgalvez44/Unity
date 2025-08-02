@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang=en>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>AlwaysMove.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1baEmFpmcl25yRDL4UuV1U8MCYoE9Q4wQ')">Download</button>
+<h1>Version 1:</h1>
+This script is used to make an object always move a certain direction!
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class AlwaysMove : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    [Tooltip("Choose the axis along which the object will move.")]
+    public Axis moveAxis = Axis.X;
+    [Tooltip("Speed of movement along the chosen axis.")]
+    public float speed = 5f;
+    [System.Serializable]
+    public enum Axis
+    {
+        X,
+        Y,
+        Z
+    }
+    private void Update()
+    {
+        Vector3 direction = moveAxis switch
+        {
+            Axis.X => transform.right,
+            Axis.Y => transform.up,
+            Axis.Z => transform.forward
+        };
+        transform.position += direction * speed * Time.deltaTime;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<link rel=stylesheet href=../script.css>
+</html>
