@@ -1,25 +1,11 @@
 loadScripts()
-async function loadScripts() {
-  const response = await fetch('./Scripts/');
-  const text = await response.text();
-
-  // Create a temporary DOM to parse the folder listing
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'text/html');
-
-  // Find all links (assuming directory listing is enabled)
-  const links = doc.querySelectorAll('a');
-  links.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href.endsWith('.html')) {
-      const collectedName = href.replace(/\.html$/, '');
-      create(`
-        <div class=cs>
-          <button onclick="window.location.href = '${collectedName}.html'">
-            ${collectedName.replace("gam", "game")}.cs
-          </button>
-        </div>
-      `, "scr");
-    }
-  });
+function loadScripts() {
+const names = ["Accelerator", "AlwaysMove", "Audio", "AutoDestroy", "Beam", "BotNavigation", "Buttons", "CameraCanvas2D", "CameraControl", "CameraRotator", "Checkpoint", "ChildObjects", "CollectableManagement", "Collectables", "ComponentManager", "Cycle", "Date", "Delay", "DestroyZone", "Drag", "EventTrigger", "ExtendedControls", "Follow", "GamControl", "Interactive", "IsWatching", "Mode", "ObjectManagement", "OpenUI", "OverrideChildObjects", "Pathway", "Performance", "PhysicsManager", "PlayerMovement", "RandomTrigger", "Rotate", "Rotating", "Spawner", "Split", "SpotLight", "StatComparator", "StatCreator", "StateTrigger", "StatOverrider", "Teleport", "TimeOfDay", "Timer", "TimerManager", "TouchTrigger", "Trigger", "UIManagement", "VariableOverride", "VoiceInput", "VoiceListener"]
+names.forEach(collectedName => {
+create(`<div class=cs>
+<button onclick="window.location.href = '${collectedName}.html'">
+${collectedName.replace("Gam", "Game")}.cs
+</button>
+</div>`, "scr")
+})
 }
