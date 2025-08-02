@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - StateTrigger.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>StateTrigger.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1nR5_u5_kqzapj44PQ8DrBtpSPSBqQvxy')">Download</button>
+<h1>Version 2:</h1>
+This script is used to set actions per state, cycle through states, and active the current selected state
+<h1>Method names:</h1>
+Activate<br>
+Next<br>
+Back
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.Reflection;
+
+public class StateTrigger : MonoBehaviour
+{
+    [System.Serializable]
+    public class State
+    {
+        public string stateName;
+        public Component stateComponent;
+        public string stateMethod;
+    }
+    [Header("State Settings")]
+    public List<State> states = new List<State>();
+    public enum TriggerMode { Sequential, Random, CurrentSelected }
+    public TriggerMode triggerMode = TriggerMode.Sequential;
+    public bool pickNew = false;
+    private int currentIndex = 0;
+    private int lastRandomIndex = -1;
+    public void Activate()
+    {
+        if (states.Count == 0)
+        {
+            Debug.LogWarning("No states defined.");
+            return;
+        }
+        switch (triggerMode)
+        {
+            case TriggerMode.Sequential:
+                ActivateSequential();
+                break;
+            case TriggerMode.Random:
+                ActivateRandom();
+                break;
+            case TriggerMode.CurrentSelected:
+                ActivateCurrentSelected();
+                break;
+        }
+    }
+    public void Next()
+    {
+        currentIndex = (currentIndex + 1) % states.Count; 
+    }
+    public void Back()
+    {
+        currentIndex = (currentIndex - 1 + states.Count) % states.Count; 
+    }
+    private void ActivateSequential()
+    {
+        if (states.Count > 0)
+        {
+            State currentState = states[currentIndex];
+            ExecuteState(currentState);
+            Next(); 
+        }
+    }
+    private void ActivateRandom()
+    {
+        if (states.Count > 1)
+        {
+            int randomIndex;
+            if (pickNew)
+            {
+                do
+                {
+                    randomIndex = Random.Range(0, states.Count);
+                }
+                while (randomIndex == lastRandomIndex); 
+            }
+            else
+            {
+                randomIndex = Random.Range(0, states.Count); 
+            }
+            lastRandomIndex = randomIndex;
+            State randomState = states[randomIndex];
+            ExecuteState(randomState);
+        }
+    }
+    private void ActivateCurrentSelected()
+    {
+        if (states.Count > 0 && currentIndex >= 0 && currentIndex < states.Count)
+        {
+            State currentState = states[currentIndex];
+            ExecuteState(currentState);
+        }
+        else
+        {
+            Debug.LogWarning("Invalid currentIndex.");
+        }
+    }
+    private void ExecuteState(State state)
+    {
+        if (state.stateComponent == null || string.IsNullOrEmpty(state.stateMethod))
+        {
+            Debug.LogWarning("State is missing a target component or method.");
+            return;
+        }
+        MethodInfo method = state.stateComponent.GetType().GetMethod(state.stateMethod);
+        if (method != null)
+        {
+            method.Invoke(state.stateComponent, null);
+        }
+        else
+        {
+            Debug.LogError($"Method '{state.stateMethod}' not found on component '{state.stateComponent.GetType().Name}'.");
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
