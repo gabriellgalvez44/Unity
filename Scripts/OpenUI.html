@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - OpenUI.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>OpenUI.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1PB7uGMwIGADV1TND7PF8GFijezVirUYv')">Download</button>
+<h1>Version 6:</h1>
+This script is used to make looking at objects while close enough show a UI
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class OpenUI : MonoBehaviour
+{
+    public GameObject[] targetObjects;
+    public bool useLayers = false;
+    public LayerMask interactiveLayers;
+    public GameObject focusedObject;
+    public Camera camera;
+    public float interactionDistance = 5f;
+    public GameObject uiCanvas;
+    private bool isUIActive = false;
+    private void Start()
+    {
+        if (uiCanvas != null && !uiCanvas.gameObject.activeSelf)
+        {
+            uiCanvas.gameObject.SetActive(true);
+            isUIActive = true;
+        }
+    }
+    private void Update()
+    {
+        float closestDistance = float.MaxValue;
+        GameObject closestObject = null;
+        foreach (GameObject obj in targetObjects)
+        {
+            if (IsValidTarget(obj, out float distance) && distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestObject = obj;
+            }
+        }
+        if (useLayers)
+        {
+            Collider[] colliders = Physics.OverlapSphere(camera.transform.position, interactionDistance, interactiveLayers);
+            foreach (Collider col in colliders)
+            {
+                GameObject obj = col.gameObject;
+                if (IsValidTarget(obj, out float distance) && distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestObject = obj;
+                }
+            }
+        }
+        focusedObject = closestObject;
+        if (focusedObject != null)
+        {
+            EnableUI();
+        }
+        else
+        {
+            DisableUI();
+        }
+    }
+    private bool IsValidTarget(GameObject obj, out float distance)
+    {
+        distance = 0f;
+        if (obj == null || !obj.activeSelf) return false;
+        distance = Vector3.Distance(camera.transform.position, obj.transform.position);
+        Vector3 screenPoint = camera.WorldToViewportPoint(obj.transform.position);
+        bool isInView = screenPoint.z > 0 && screenPoint.x > 0 && screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
+        return distance <= interactionDistance && isInView;
+    }
+    private void EnableUI()
+    {
+        if (!isUIActive)
+        {
+            uiCanvas.gameObject.SetActive(true);
+            isUIActive = true;
+        }
+    }
+    private void DisableUI()
+    {
+        if (isUIActive)
+        {
+            uiCanvas.gameObject.SetActive(false);
+            isUIActive = false;
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
