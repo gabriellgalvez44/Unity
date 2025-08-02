@@ -11,7 +11,7 @@
 <left>
 <h1>UIManagement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1FuxBCjOiFzW7ntO8x1P_bdE4eXyfcDDg')">Download</button>
-<h1>Version 12:</h1>
+<h1>Version 13:</h1>
 This script is used to override aspects of some objects in UI canvas's and detect if a text object is a certain text, for the detecting, if they match, not, and/or none of the texts do, what will they do each
 <h1>Method names:</h1>
 Activate
@@ -25,7 +25,7 @@ Do NOT type the () parts, those are comments explaining what they are for and/or
 {ry} (rotation y)<br>
 {rz} (rotation z)<br><br>
 {stat:statNameGoesHere} (you'll need to attatch the object that holds you custom stats in the <a href=StatCreator.html>StatCreator.cs</a> script and replace "statNameGoesHere" with your actual stat name you want to display)<br>
-  {timer} (you'll need to attatch a/the object that holds the <a href=GameControl.html>GameControl.cs</a> script to display a timer)
+{timer:timerNameGoesHere} (you'll need to attatch a/the object that holds the <a href=Timer.html>Timer.cs</a> script to display a timer)
 </left>
 <right>
 <textarea readonly>using System.Collections;
@@ -44,9 +44,11 @@ public class UIManagement : MonoBehaviour
     [Header("Objects")]
     public GameObject textObject;
     public GameObject statObject;
+    public GameObject timerObject;
+    public GameObject timeOfDayObject;
     [Header("Text Override Settings")]
     public bool overrideText = false;
-    [TextArea(3, 10)] 
+    [TextArea(3, 10)]
     public string text = "";
     public bool exponential = false;
     public float exponentialCharTime = 0.1f;
@@ -95,11 +97,9 @@ public class UIManagement : MonoBehaviour
     {
         if (button == null || !button.gameObject.activeInHierarchy)
             return false;
-
         RectTransform rect = button.GetComponent<RectTransform>();
         Canvas canvas = button.GetComponentInParent<Canvas>();
         Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-
         return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPos, cam);
     }
     public void Activate()
@@ -145,8 +145,7 @@ public class UIManagement : MonoBehaviour
             var statCreator = statObject.GetComponent<StatCreator>();
             if (statCreator != null)
             {
-                System.Text.RegularExpressions.MatchCollection matches = 
-                    System.Text.RegularExpressions.Regex.Matches(currentText, @"\{stat:(\w+)\}");
+                var matches = System.Text.RegularExpressions.Regex.Matches(currentText, @"\{stat:(\w+)\}");
                 foreach (System.Text.RegularExpressions.Match match in matches)
                 {
                     string fullTag = match.Value;
@@ -170,6 +169,32 @@ public class UIManagement : MonoBehaviour
                         currentText = currentText.Replace(fullTag, statValue);
                     }
                 }
+            }
+        }
+        if (timerObject != null)
+        {
+            var timerComponent = timerObject.GetComponent<Timer>();
+            if (timerComponent != null)
+            {
+                var timerMatches = System.Text.RegularExpressions.Regex.Matches(currentText, @"\{timer:([^}]+)\}");
+                foreach (System.Text.RegularExpressions.Match timerMatch in timerMatches)
+                {
+                    string fullTag = timerMatch.Value;
+                    string timerName = timerMatch.Groups[1].Value;
+                    var timerData = timerComponent.timers.Find(t => t.name == timerName);
+                    if (timerData != null)
+                    {
+                        currentText = currentText.Replace(fullTag, timerData.time);
+                    }
+                }
+            }
+        }
+        if (timeOfDayObject != null)
+        {
+            var timeOfDayComponent = timeOfDayObject.GetComponent<TimeOfDay>();
+            if (timeOfDayComponent != null && currentText.Contains("{time}"))
+            {
+                currentText = currentText.Replace("{time}", timeOfDayComponent.currentTime);
             }
         }
         bool matchedAny = false;
@@ -203,7 +228,6 @@ public class UIManagement : MonoBehaviour
         {
             InvokeMethod(defaultNotMatchedComponent, defaultNotMatchedMethod);
         }
-
         if (overrideText && textObject != null)
         {
             if (string.IsNullOrEmpty(currentText))
@@ -228,7 +252,7 @@ public class UIManagement : MonoBehaviour
             }
         }
     }
-    private void InvokeMethod(MonoBehaviour component, string methodName)
+    void InvokeMethod(MonoBehaviour component, string methodName)
     {
         if (component != null && !string.IsNullOrEmpty(methodName))
         {
@@ -239,14 +263,14 @@ public class UIManagement : MonoBehaviour
             Debug.LogWarning("Component or method name is invalid for invocation.");
         }
     }
-    private IEnumerator ExponentialTextTyping(TMP_Text textComponent, string textToType)
+    IEnumerator ExponentialTextTyping(TMP_Text textComponent, string textToType)
     {
         textComponent.text = "";
+        yield return null;
         for (int i = 0; i < textToType.Length; i++)
         {
-            textComponent.text += textToType[i];
-            float delay = exponentialCharTime * Mathf.Pow(1.2f, i);
-            yield return new WaitForSeconds(delay);
+            textComponent.text = textToType.Substring(0, i + 1);
+            yield return new WaitForSeconds(exponentialCharTime);
         }
     }
 }</textarea>
