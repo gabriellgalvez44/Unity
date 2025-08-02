@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Trigger.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Trigger.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1iRJBB1TCE783Togl19Aw3C3zD0vnrf23')">Download</button>
+<h1>Version 3:</h1>
+This script is used to activate actions either within a loop, or on start
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Trigger : MonoBehaviour
+{
+    public enum TriggerMode
+    {
+        OnStart,
+        Loop
+    }
+    [Header("Settings")]
+    public TriggerMode mode = TriggerMode.OnStart;
+    [Header("Target Settings")]
+    public MonoBehaviour targetComponent;
+    public string methodName;
+    [Header("Loop Settings (Only for Loop Mode)")]
+    public float loopInterval = 1f;
+    private Coroutine loopCoroutine;
+    private void Start()
+    {
+        if (mode == TriggerMode.OnStart)
+        {
+            InvokeMethod();
+        }
+        else if (mode == TriggerMode.Loop)
+        {
+            loopCoroutine = StartCoroutine(LoopCoroutine());
+        }
+    }
+    private void InvokeMethod()
+    {
+        if (targetComponent != null && !string.IsNullOrWhiteSpace(methodName))
+        {
+            var method = targetComponent.GetType().GetMethod(methodName);
+            if (method != null)
+            {
+                method.Invoke(targetComponent, null);
+            }
+            else
+            {
+                Debug.LogWarning($"Method '{methodName}' not found on {targetComponent.GetType().Name}");
+            }
+        }
+    }
+    private IEnumerator LoopCoroutine()
+    {
+        while (true)
+        {
+            InvokeMethod();
+            yield return new WaitForSeconds(loopInterval);
+        }
+    }
+    private void OnDisable()
+    {
+        if (mode == TriggerMode.Loop && loopCoroutine != null)
+        {
+            StopCoroutine(loopCoroutine);
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
