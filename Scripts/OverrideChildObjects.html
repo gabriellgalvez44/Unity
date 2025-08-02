@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - OverrideChidObjects.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>OverrideChildObjects.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1VmESoqA54_vSKaikQM8XANpJHXujNgAd')">Download</button>
+<h1>Version 3:</h1>
+This script is used to override the settings of the <a href=ChildObjects.html>ChildObjects.cs</a> script
+<h1>Method names:</h1>
+Method names:
+Override
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class OverrideChildObjects : MonoBehaviour
+{
+    [Header("Player Movement Script Reference")]
+    public ChildObjects childObjects;
+    [Header("Override Settings")]
+    public float targetOffsetX = 0f;
+    public float targetOffsetY = 0f;
+    public float targetOffsetZ = 0f;
+    public float targetRotationX = 0f;
+    public float targetRotationY = 0f;
+    public float targetRotationZ = 0f;
+    [Header("Transition Settings")]
+    public float transitionDuration = 0.5f;
+    private bool isOverriding = false;
+    public void Override()
+    {
+        if (isOverriding) return;
+        isOverriding = true;
+        StartCoroutine(GradualOverrideRoutine());
+    }
+    private IEnumerator GradualOverrideRoutine()
+    {
+        float initialOffsetX = childObjects.offsetX;
+        float initialOffsetY = childObjects.offsetY;
+        float initialOffsetZ = childObjects.offsetZ;
+        float initialRotationX = childObjects.rotationX;
+        float initialRotationY = childObjects.rotationY;
+        float initialRotationZ = childObjects.rotationZ;
+        float elapsedTime = 0f;
+        while (elapsedTime < transitionDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / transitionDuration;
+            childObjects.offsetX = Mathf.Lerp(initialOffsetX, targetOffsetX, t);
+            childObjects.offsetY = Mathf.Lerp(initialOffsetY, targetOffsetY, t);
+            childObjects.offsetZ = Mathf.Lerp(initialOffsetZ, targetOffsetZ, t);
+            childObjects.rotationX = Mathf.Lerp(initialRotationX, targetRotationX, t);
+            childObjects.rotationY = Mathf.Lerp(initialRotationY, targetRotationY, t);
+            childObjects.rotationZ = Mathf.Lerp(initialRotationZ, targetRotationZ, t);
+            yield return null;
+        }
+        childObjects.offsetX = targetOffsetX;
+        childObjects.offsetY = targetOffsetY;
+        childObjects.offsetZ = targetOffsetZ;
+        childObjects.rotationX = targetRotationX;
+        childObjects.rotationY = targetRotationY;
+        childObjects.rotationZ = targetRotationZ;
+        isOverriding = false;
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
