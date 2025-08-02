@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - GameControl.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>GameControl.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Oeu9Ut97u8DMN1bVxzHRuNofnmtMPgUw')">Download</button>
+<h1>Version 5:</h1>
+This script is used to manage aspects of your game and open a URL in your searching browser!
+<h1>Method names:</h1>
+LoadScene<br>
+Log<br>
+OpenURL<br>
+CloseGame<br><br>
+Play<br>
+PauseTimer<br>
+ResumeTimer<br>
+StopTimer
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+public class GameControl : MonoBehaviour
+{
+    [Header("Scene Settings")]
+#if UNITY_EDITOR
+    public SceneAsset sceneToLoadAsset;
+#endif
+    public float timeSpeed = 1f;
+    [HideInInspector] public string sceneToLoad;
+    [Header("Logging Settings")]
+    public LogType logType = LogType.Normal;
+    [TextArea] public string logText = "Enter your custom log message here";
+    [Header("URL Settings")]
+    public string url = "https://example.com";
+    [Header("Timer")]
+    public string time = "y:d:h:m:s";
+    public MonoBehaviour onFinishTargetComponent;
+    public string onFinishMethodName;
+    private string originalTimeString;
+    private bool pause;
+    private bool running;
+    private bool completed;
+    private float totalTimeInSeconds;
+    private float remainingTime;
+    private float elapsedTime;
+    public string RemainingTimeString => FormatTime(remainingTime);
+    public enum LogType
+    {
+        Normal,
+        Warning,
+        Error
+    }
+    void Awake()
+    {
+        ParseTime(time);
+    }
+    void Update()
+    {
+        Time.timeScale = Mathf.Max(0f, timeSpeed);
+        {
+
+        }
+        if (running && !pause && remainingTime > 0)
+        {
+            elapsedTime += Time.deltaTime;
+            remainingTime -= Time.deltaTime;
+            time = RemainingTimeString;
+
+            if (remainingTime <= 0)
+            {
+                remainingTime = 0;
+                running = false;
+                completed = true;
+                time = originalTimeString;
+                activateFinishAction();
+                Debug.Log("Timer Completed!");
+            }
+        }
+        else if (running && !pause)
+        {
+            time = FormatTime(remainingTime);
+        }
+    }
+    private void ParseTime(string timeStr)
+    {
+        string[] timeUnits;
+        totalTimeInSeconds = 0;
+
+        if (timeStr.Contains(":"))
+        {
+            timeUnits = timeStr.Split(':');
+        }
+        else
+        {
+            timeUnits = new string[] { timeStr };
+        }
+        switch (timeUnits.Length)
+        {
+            case 1:
+                totalTimeInSeconds = float.Parse(timeUnits[0]);
+                break;
+            case 2:
+                totalTimeInSeconds = float.Parse(timeUnits[0]) * 60 + float.Parse(timeUnits[1]);
+                break;
+            case 3:
+                totalTimeInSeconds = float.Parse(timeUnits[0]) * 3600 + float.Parse(timeUnits[1]) * 60 + float.Parse(timeUnits[2]);
+                break;
+            case 4:
+                totalTimeInSeconds = float.Parse(timeUnits[0]) * 86400 + float.Parse(timeUnits[1]) * 3600 + float.Parse(timeUnits[2]) * 60 + float.Parse(timeUnits[3]);
+                break;
+            case 5:
+                totalTimeInSeconds = float.Parse(timeUnits[0]) * 31190400 + float.Parse(timeUnits[1]) * 86400 + float.Parse(timeUnits[2]) * 3600 + float.Parse(timeUnits[3]) * 60 + float.Parse(timeUnits[4]);
+                break;
+            default:
+                Debug.LogError("Invalid time format.");
+                break;
+        }
+        remainingTime = totalTimeInSeconds;
+    }
+    public void Play()
+    {
+        originalTimeString = time;
+        if (totalTimeInSeconds > 0)
+        {
+            running = true;
+            pause = false;
+            elapsedTime = 0;
+            completed = false;
+        }
+        else
+        {
+            Debug.LogError("Invalid time format or zero time.");
+        }
+    }
+    public void PauseTimer()
+    {
+        if (running && !pause)
+        {
+            pause = true;
+            Debug.Log("Timer Paused.");
+        }
+    }
+    public void ResumeTimer()
+    {
+        if (running && pause)
+        {
+            pause = false;
+            Debug.Log("Timer Resumed.");
+        }
+    }
+    public void StopTimer()
+    {
+        running = false;
+        pause = false;
+        elapsedTime = 0;
+        remainingTime = totalTimeInSeconds;
+        time = originalTimeString;
+        Debug.Log("Timer Stopped and Reset.");
+    }
+    public float GetRemainingTime()
+    {
+        return remainingTime;
+    }
+    public float GetElapsedTime()
+    {
+        return elapsedTime;
+    }
+    private string FormatTime(float timeInSeconds)
+    {
+        int years = Mathf.FloorToInt(timeInSeconds / 31190400);
+        timeInSeconds -= years * 31190400;
+        int days = Mathf.FloorToInt(timeInSeconds / 86400);
+        timeInSeconds -= days * 86400;
+        int hours = Mathf.FloorToInt(timeInSeconds / 3600);
+        timeInSeconds -= hours * 3600;
+        int minutes = Mathf.FloorToInt(timeInSeconds / 60);
+        int seconds = Mathf.FloorToInt(timeInSeconds % 60);
+        if (years > 0)
+        {
+            return $"{years}:{days:D2}:{hours:D2}:{minutes:D2}:{seconds:D2}";
+        }
+        else if (days > 0)
+        {
+            return $"{days}:{hours:D2}:{minutes:D2}:{seconds:D2}";
+        }
+        else if (hours > 0)
+        {
+            return $"{hours}:{minutes:D2}:{seconds:D2}";
+        }
+        else if (minutes > 0)
+        {
+            return $"{minutes}:{seconds:D2}";
+        }
+        else
+        {
+            return $"{seconds:D2}";
+        }
+    }
+    public void LoadScene()
+    {
+        if (string.IsNullOrEmpty(sceneToLoad))
+        {
+            Debug.LogError("No scene name assigned to load!");
+            return;
+        }
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (sceneToLoad == currentSceneName)
+        {
+            SceneManager.LoadScene(currentSceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(sceneToLoad);
+        }
+    }
+    public void Log()
+    {
+        switch (logType)
+        {
+            case LogType.Normal:
+                Debug.Log(logText);
+                break;
+            case LogType.Warning:
+                Debug.LogWarning(logText);
+                break;
+            case LogType.Error:
+                Debug.LogError(logText);
+                break;
+            default:
+                Debug.Log("Unknown log type!");
+                break;
+        }
+    }
+    public void OpenURL()
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            Debug.LogError("No URL assigned to open!");
+            return;
+        }
+        Application.OpenURL(url);
+    }
+    public void CloseGame()
+    {
+        #if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+        #else
+        Application.Quit();
+        #endif
+    }
+    private void activateFinishAction()
+    {
+        if (onFinishTargetComponent != null && !string.IsNullOrEmpty(onFinishMethodName))
+        {
+            onFinishTargetComponent.Invoke(onFinishMethodName, 0f);
+        }
+    }
+    #if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (sceneToLoadAsset != null)
+        {
+            string path = AssetDatabase.GetAssetPath(sceneToLoadAsset);
+            sceneToLoad = System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+        else
+        {
+            sceneToLoad = "";
+        }
+    }
+#endif
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
