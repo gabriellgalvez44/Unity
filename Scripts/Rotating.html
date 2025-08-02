@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - Rotating.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>Rotating.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Kd_ELGhw7x-6sI8KHtnoNnwBwRC3h3rQ')">Download</button>
+<h1>Version 1:</h1>
+This script is used to make objects constantly rotate and/or rotate/orbit around a center object
+<h1>Method names:</h1>
+(There are none)
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Rotating : MonoBehaviour
+{
+    public enum AxisOption { X, Y, Z, All }
+    [Header("Rotate Self")]
+    public bool enableSelfRotation = false;
+    public bool loopSelfRotation = false;
+    public AxisOption selfRotationAxis = AxisOption.Y;
+    public float selfRotationDegrees = 90f;
+    public float selfRotationSpeed = 10f;
+    [Header("Rotate Center")]
+    public bool enableCenterRotation = false;
+    public bool loopCenterRotation = false;
+    public Transform objectToCenterAround;
+    public AxisOption centerRotationAxis = AxisOption.Y;
+    public float centerRotationDegrees = 90f;
+    public float centerRotationSpeed = 10f;
+    private float selfRotationProgress = 0f;
+    private float centerRotationProgress = 0f;
+    private void Update()
+    {
+        if (enableSelfRotation)
+        {
+            RotateSelf();
+        }
+
+        if (enableCenterRotation && objectToCenterAround != null)
+        {
+            RotateAroundCenter();
+        }
+    }
+    private void RotateSelf()
+    {
+        if (loopSelfRotation || selfRotationProgress < selfRotationDegrees)
+        {
+            float rotationStep = selfRotationSpeed * Time.deltaTime;
+            Vector3 axis = GetAxisVector(selfRotationAxis);
+            transform.Rotate(axis, rotationStep);
+            selfRotationProgress += rotationStep;
+            if (!loopSelfRotation && selfRotationProgress >= selfRotationDegrees)
+            {
+                selfRotationProgress = selfRotationDegrees;
+            }
+        }
+    }
+    private void RotateAroundCenter()
+    {
+        if (loopCenterRotation || centerRotationProgress < centerRotationDegrees)
+        {
+            float rotationStep = centerRotationSpeed * Time.deltaTime;
+            Vector3 axis = GetAxisVector(centerRotationAxis);
+            transform.RotateAround(objectToCenterAround.position, axis, rotationStep);
+            centerRotationProgress += rotationStep;
+            if (!loopCenterRotation && centerRotationProgress >= centerRotationDegrees)
+            {
+                centerRotationProgress = centerRotationDegrees;
+            }
+        }
+    }
+    private Vector3 GetAxisVector(AxisOption axisOption)
+    {
+        switch (axisOption)
+        {
+            case AxisOption.X:
+                return Vector3.right;
+            case AxisOption.Y:
+                return Vector3.up;
+            case AxisOption.Z:
+                return Vector3.forward;
+            case AxisOption.All:
+                return Vector3.one.normalized;
+            default:
+                return Vector3.up;
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
