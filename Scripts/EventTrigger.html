@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<title>Unity Scripts - EventTrigger.cs</title>
+</head>
+<body>
+<section>
+<button onclick="window.location.href='library.html'"><- Back...</button>
+</section>
+<section>
+<left>
+<h1>EventTrigger.cs</h1>
+<button onclick="window.open('https://drive.google.com/uc?export=download&id=1Jb4u7h9WrIASFpXtFrEvxhdawzYJLri6')">Download</button>
+<h1>Version 2:</h1>
+This script is used to execute actions cross object compatibly
+<h1>Method names:</h1>
+Method names:
+Transmit
+</left>
+<right>
+<textarea readonly>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class EventTrigger : MonoBehaviour
+{
+    private static List<EventData> activeEvents = new List<EventData>();
+    [Header("Execute Settings")]
+    public string eventName;
+    public float duration = 0f;
+    [Header("Cause Settings")]
+    public string causeEventName;
+    public Component targetComponent;
+    public string methodName;
+    public bool deactivateOnTrigger = true;
+    private bool isReceiving = true;
+    public void Transmit()
+    {
+        if (string.IsNullOrEmpty(eventName))
+        {
+            Debug.LogWarning("Event name is not set!");
+            return;
+        }
+        EventData newEvent = new EventData(eventName, duration > 0 ? Time.time + duration : float.MaxValue);
+        activeEvents.Add(newEvent);
+        Debug.Log($"Event '{eventName}' transmitted.");
+    }
+    private void Start()
+    {
+        StartCoroutine(ReceiveEventsLoop());
+    }
+    private System.Collections.IEnumerator ReceiveEventsLoop()
+    {
+        while (isReceiving)
+        {
+            Receive();
+            yield return null;
+        }
+    }
+    private void Receive()
+    {
+        if (string.IsNullOrEmpty(causeEventName))
+        {
+            return;
+        }
+        for (int i = activeEvents.Count - 1; i >= 0; i--)
+        {
+            var evt = activeEvents[i];
+            if (evt.name == causeEventName)
+            {
+                if (targetComponent != null && !string.IsNullOrEmpty(methodName))
+                {
+                    var method = targetComponent.GetType().GetMethod(methodName);
+                    if (method != null)
+                    {
+                        method.Invoke(targetComponent, null);
+                        Debug.Log($"Event '{causeEventName}' received and method '{methodName}' called on '{targetComponent.GetType().Name}'.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Method '{methodName}' not found on component '{targetComponent.GetType().Name}'.");
+                    }
+                    if (deactivateOnTrigger)
+                    {
+                        activeEvents.RemoveAt(i);
+                        Debug.Log($"Event '{causeEventName}' deactivated.");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("Target component or method name is not properly set!");
+                }
+                return;
+            }
+        }
+    }
+    public static void ClearEvents()
+    {
+        activeEvents.Clear();
+        Debug.Log("All events cleared.");
+    }
+    private class EventData
+    {
+        public string name;
+        public float expiryTime;
+        public EventData(string name, float expiryTime)
+        {
+            this.name = name;
+            this.expiryTime = expiryTime;
+        }
+        public bool IsExpired()
+        {
+            return Time.time > expiryTime;
+        }
+    }
+    private void Update()
+    {
+        for (int i = activeEvents.Count - 1; i >= 0; i--)
+        {
+            if (activeEvents[i].IsExpired())
+            {
+                activeEvents.RemoveAt(i);
+                Debug.Log("An expired event was removed.");
+            }
+        }
+    }
+}</textarea>
+</right>
+</section>
+</body>
+<script src=https://gabriellgalvez44.github.io/Data/shorten.js></script>
+<link rel=stylesheet href=../script.css>
+</html>
