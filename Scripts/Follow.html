@@ -11,7 +11,7 @@
 <left>
 <h1>Follow.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1Im3ndE3Icz_sam65BWEhi3M0TJjJU3As')">Download</button>
-<h1>Version 6:</h1>
+<h1>Version 7:</h1>
 This script is used to follow certain vertexes of an another object (includes rotational)
 <h1>Method names:</h1>
 (There are none)
@@ -30,6 +30,7 @@ public class Follow : MonoBehaviour
     public bool followX = false;
     public bool followY = false;
     public bool followZ = false;
+    public bool followMovement = false;
     [Header("Rotation Follow Settings")]
     public bool followRotationX = false;
     public bool followRotationY = false;
@@ -40,6 +41,19 @@ public class Follow : MonoBehaviour
     public bool useFacingDirection = false;
     public LayerMask layerToCheck;
     private const float collisionOffset = 0.01f;
+    [Header("Cursor Follow Settings")]
+    public bool followCursor = false;
+    public bool stayInCamera = true;
+    private const float collisionOffset2 = 0.01f;
+    private Camera mainCamera;
+    public bool moveWithScroll = true;
+    public float scrollSpeed = 5f;
+    private Transform movementSource;
+    private Vector3 lastMovementSourcePosition;
+    private void Start()
+    {
+        mainCamera = Camera.main;
+    }
     private void Update()
     {
         if (faceObject && followingObject != null)
@@ -86,6 +100,85 @@ public class Follow : MonoBehaviour
                 }
             }
         }
+        if (followMovement && mainCamera != null)
+        {
+            if (movementSource == null)
+            {
+                Transform current = mainCamera.transform;
+                while (current != null)
+                {
+                    if (HasMoved(current))
+                    {
+                        movementSource = current;
+                        lastMovementSourcePosition = current.position;
+                        break;
+                    }
+                    current = current.parent;
+                }
+            }
+            else
+            {
+                if (moveWithScroll)
+                {
+                    float scrollInput = Input.GetAxis("Mouse ScrollWheel");
+                    if (Mathf.Abs(scrollInput) > 0.001f)
+                    {
+                        Camera mainCam = Camera.main;
+                        if (mainCam == null) return;
+                        Vector3 dir = transform.position - mainCam.transform.position;
+                        float distance = dir.magnitude;
+                        distance += scrollInput * scrollSpeed;
+                        distance = Mathf.Clamp(distance, 0.5f, 100f);
+                        Vector3 targetPos = mainCam.transform.position + dir.normalized * distance;
+                        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * scrollSpeed);
+                    }
+                }
+                Vector3 currentPos = movementSource.position;
+                Vector3 delta = currentPos - lastMovementSourcePosition;
+                if (delta.magnitude > 0.0001f)
+                {
+                    Vector3 velocity = delta / Time.deltaTime;
+                    transform.position += velocity * Time.deltaTime;
+                    lastMovementSourcePosition = currentPos;
+                }
+                else
+                {
+                    movementSource = null;
+                }
+            }
+        }
+        if (followCursor && mainCamera != null)
+        {
+            float mouseX = Input.GetAxis("Mouse X");
+            float mouseY = Input.GetAxis("Mouse Y");
+            if (Mathf.Abs(mouseX) > 0.001f || Mathf.Abs(mouseY) > 0.001f)
+            {
+                float originalDistanceToCamera = Vector3.Dot(transform.position - mainCamera.transform.position, mainCamera.transform.forward);
+                Vector3 worldMoveDirection = (mainCamera.transform.right * mouseX) + (mainCamera.transform.up * mouseY);
+                worldMoveDirection.Normalize();
+                float moveDistance = new Vector2(mouseX, mouseY).magnitude;
+                Vector3 proposedPosition = transform.position + worldMoveDirection * moveDistance;
+                Vector3 directionFromCamera = proposedPosition - mainCamera.transform.position;
+                float projectedDistance = Vector3.Dot(directionFromCamera, mainCamera.transform.forward);
+                float distanceOffset = originalDistanceToCamera - projectedDistance;
+                proposedPosition += mainCamera.transform.forward * distanceOffset;
+                RaycastHit hit;
+                bool blockedByCollider = Physics.Raycast(transform.position, worldMoveDirection, out hit, moveDistance + collisionOffset2, layerToCheck);
+                bool insideCameraView = true;
+                if (stayInCamera)
+                {
+                    Vector3 viewportPoint = mainCamera.WorldToViewportPoint(proposedPosition);
+                    insideCameraView =
+                        viewportPoint.z > 0f &&
+                        viewportPoint.x >= 0f && viewportPoint.x <= 1f &&
+                        viewportPoint.y >= 0f && viewportPoint.y <= 1f;
+                }
+                if (!blockedByCollider && insideCameraView)
+                {
+                    transform.position = proposedPosition;
+                }
+            }
+        }
     }
     private bool IsCollidable(GameObject hitObject)
     {
@@ -95,6 +188,10 @@ public class Follow : MonoBehaviour
             return false;
         }
         return true;
+    }
+    bool HasMoved(Transform t)
+    {
+        return t.hasChanged;
     }
 }</textarea>
 </right>
