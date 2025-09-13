@@ -11,7 +11,7 @@
 <left>
 <h1>Audio.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1zySGgQbYRIc9EZXm8947tv_STgtHkVyV')">Download</button>
-<h1>Version 4:</h1>
+<h1>Version 5:</h1>
 This script is used for SFX and Background Music OST!
 <h1>Method names:</h1>
 Play<br>
@@ -27,7 +27,6 @@ public class Audio : MonoBehaviour
 {
     [Header("Audio Settings")]
     public List<AudioSettings> audioSettingsList;
-    [Range(0f, 100f)] public float volume = 1.0f;
     public float distance = 10f;
     [Header("Playback Options")]
     public bool playOnStart = false;
@@ -67,7 +66,7 @@ public class Audio : MonoBehaviour
                     newAudioSource.clip = audioSetting.clip;
                     newAudioSource.loop = individualLoop;
                     newAudioSource.spatialBlend = audioSetting.allow3D ? 1.0f : 0.0f;
-                    newAudioSource.volume = Mathf.Clamp(volume / 10f, 0f, 1f);
+                    newAudioSource.volume = Mathf.Clamp(audioSetting.volume / 100f, 0f, 1f);
                     newAudioSource.reverbZoneMix = audioSetting.reverb ? 1.1f : 0f;
                     newAudioSource.pitch = GetPitch(audioSetting.speed);
                     newAudioSource.Play();
@@ -82,7 +81,7 @@ public class Audio : MonoBehaviour
                 newAudioSource.clip = selectedAudio.clip;
                 newAudioSource.loop = individualLoop;
                 newAudioSource.spatialBlend = selectedAudio.allow3D ? 1.0f : 0.0f;
-                newAudioSource.volume = Mathf.Clamp(volume / 10f, 0f, 1f);
+                newAudioSource.volume = Mathf.Clamp(selectedAudio.volume / 100f, 0f, 1f);
                 newAudioSource.reverbZoneMix = selectedAudio.reverb ? 1.1f : 0f;
                 newAudioSource.pitch = GetPitch(selectedAudio.speed);
                 newAudioSource.Play();
@@ -157,6 +156,7 @@ public class Audio : MonoBehaviour
         public SpeedOption speed;
         public bool allow3D;
         public bool reverb;
+        [Range(0, 100)] public float volume;
     }
     public enum SpeedOption
     {
