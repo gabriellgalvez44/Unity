@@ -11,7 +11,7 @@
 <left>
 <h1>TouchTrigger.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1MZjTwXeVuECsFpBVcuqBjJrpeIj8FZBi')">Download</button>
-<h1>Version 4:</h1>
+<h1>Version 5:</h1>
 This script is used to detect if 2 objects are colliding with each other, stops, while, during a consecutive duration, and etc... Then what actions will they do
 <h1>Method names:</h1>
 Reset
@@ -20,7 +20,6 @@ Reset
 <textarea readonly>using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 
 public class TouchTrigger : MonoBehaviour
 {
@@ -59,6 +58,10 @@ public class TouchTrigger : MonoBehaviour
         None,
         ResetOnExit,
         ResetAutomatically
+    }
+    void Start()
+    {
+        var mc = gameObject.AddComponent<MeshCollider>(); mc.sharedMesh = GetComponent<MeshFilter>().mesh;
     }
     private void Update()
     {
