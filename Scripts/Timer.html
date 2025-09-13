@@ -11,7 +11,7 @@
 <left>
 <h1>Timer.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1BWgnw8o-2UaSY0TjGbL41wWTFUUwW8Cq')">Download</button>
-<h1>Version 1:</h1>
+<h1>Version 2:</h1>
 This script is used to add/use timers in your game
 <h1>Method names:</h1>
 (There are none)
@@ -28,9 +28,32 @@ public class Timer : MonoBehaviour
     {
         public string name;
         public bool playOnStart = false;
+        public bool autoReset = false;
+        public bool autoRestart = false;
         public string time = "0:0:0:0:0";
         public MonoBehaviour onFinishTargetComponent;
         public string onFinishMethodName;
+        [Header("Tick event")]
+        public MonoBehaviour tickComponent;
+        public string tickMethodName;
+        [Header("Start event")]
+        public MonoBehaviour startComponent;
+        public string startMethodName;
+        [Header("Pause event")]
+        public MonoBehaviour pauseComponent;
+        public string pauseMethodName;
+        [Header("Resume event")]
+        public MonoBehaviour resumeComponent;
+        public string resumeMethodName;
+        [Header("Stop event")]
+        public MonoBehaviour stopComponent;
+        public string stopMethodName;
+        [Header("Finish event")]
+        public MonoBehaviour finishComponent;
+        public string finishMethodName;
+        [Header("Time Added event")]
+        public MonoBehaviour timeAddedComponent;
+        public string timeAddedMethodName;
         [HideInInspector] public string originalTimeString;
         [HideInInspector] public bool pause;
         [HideInInspector] public bool running;
@@ -38,6 +61,7 @@ public class Timer : MonoBehaviour
         [HideInInspector] public float totalTimeInSeconds;
         [HideInInspector] public float remainingTime;
         [HideInInspector] public float elapsedTime;
+        private int lastWholeSecond = -1;
         public string RemainingTimeString => FormatTime(remainingTime);
         public void ParseTime()
         {
@@ -73,26 +97,67 @@ public class Timer : MonoBehaviour
         public void InternalStart()
         {
             originalTimeString = time;
+            ResetTimer();
             if (totalTimeInSeconds > 0)
             {
-                running = true;
-                pause = false;
-                elapsedTime = 0;
-                completed = false;
+                if (!running)
+                {
+                    running = true;
+                    pause = false;
+                    elapsedTime = 0;
+                    completed = false;
+                    lastWholeSecond = Mathf.CeilToInt(remainingTime);
+                    if (startComponent != null && !string.IsNullOrEmpty(startMethodName))
+                        startComponent.Invoke(startMethodName, 0f);
+                }
             }
             else
-            {
                 Debug.LogError($"[{name}] Invalid time format or zero time.");
-            }
         }
-        public void InternalStop()
+        private void ResetTimer()
         {
             running = false;
             pause = false;
             elapsedTime = 0;
             remainingTime = totalTimeInSeconds;
             time = originalTimeString;
+        }
+        public void InternalStop()
+        {
+            ResetTimer();
+            time = originalTimeString;
             Debug.Log($"[{name}] Timer Stopped and Reset.");
+            if (stopComponent != null && !string.IsNullOrEmpty(stopMethodName))
+                stopComponent.Invoke(stopMethodName, 0f);
+        }
+        public void Pause()
+        {
+            if (running && !pause)
+            {
+                pause = true;
+                if (pauseComponent != null && !string.IsNullOrEmpty(pauseMethodName))
+                    pauseComponent.Invoke(pauseMethodName, 0f);
+            }
+        }
+        public void Resume()
+        {
+            if (running && pause)
+            {
+                pause = false;
+                if (resumeComponent != null && !string.IsNullOrEmpty(resumeMethodName))
+                    resumeComponent.Invoke(resumeMethodName, 0f);
+            }
+        }
+        public void AddTime(float seconds)
+        {
+            if (seconds <= 0) return;
+            totalTimeInSeconds += seconds;
+            remainingTime += seconds;
+            if (timeAddedComponent != null && !string.IsNullOrEmpty(timeAddedMethodName))
+                timeAddedComponent.Invoke(timeAddedMethodName, 0f);
+            if (autoRestart && !running)
+                InternalStart();
+            lastWholeSecond = Mathf.CeilToInt(remainingTime);
         }
         public void Update()
         {
@@ -100,28 +165,37 @@ public class Timer : MonoBehaviour
             {
                 elapsedTime += Time.deltaTime;
                 remainingTime -= Time.deltaTime;
+                int currentWholeSecond = Mathf.CeilToInt(remainingTime);
+                if (currentWholeSecond < lastWholeSecond)
+                {
+                    lastWholeSecond = currentWholeSecond;
+                    if (tickComponent != null && !string.IsNullOrEmpty(tickMethodName))
+                        tickComponent.Invoke(tickMethodName, 0f);
+                    if (remainingTime <= 1f)
+                    {
+                        if (finishComponent != null && !string.IsNullOrEmpty(finishMethodName))
+                            finishComponent.Invoke(finishMethodName, 0f);
+                    }
+                }
                 time = RemainingTimeString;
                 if (remainingTime <= 0)
                 {
                     remainingTime = 0;
                     running = false;
                     completed = true;
-                    time = originalTimeString;
+                    if (autoReset)
+                        ResetTimer();
                     if (onFinishTargetComponent != null && !string.IsNullOrEmpty(onFinishMethodName))
-                    {
                         onFinishTargetComponent.Invoke(onFinishMethodName, 0f);
-                    }
                     Debug.Log($"[{name}] Timer Completed!");
                 }
             }
             else if (running && !pause)
-            {
                 time = FormatTime(remainingTime);
-            }
         }
         private static string FormatTime(float timeInSeconds)
         {
-            int years = Mathf.FloorToInt(timeInSeconds / 31190400);
+            int years = Mathf.FloorToInt(timeInSeconds / 31536000);
             timeInSeconds -= years * 31190400;
             int days = Mathf.FloorToInt(timeInSeconds / 86400);
             timeInSeconds -= days * 86400;
@@ -145,26 +219,20 @@ public class Timer : MonoBehaviour
     void Awake()
     {
         foreach (var timer in timers)
-        {
             timer.ParseTime();
-        }
     }
     void Start()
     {
         foreach (var timer in timers)
         {
             if (timer.playOnStart)
-            {
                 timer.InternalStart();
-            }
         }
     }
     void Update()
     {
         foreach (var timer in timers)
-        {
             timer.Update();
-        }
     }
 }</textarea>
 </right>
