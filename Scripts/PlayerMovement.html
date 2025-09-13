@@ -11,7 +11,7 @@
 <left>
 <h1>PlayerMovement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1d8swOtqjk1MAse-dpjCyam07MxvZEDX1')">Download</button>
-<h1>Version 16:</h1>
+<h1>Version 17:</h1>
 This script is used to make an object considered the player and add keybinding controls for moving, advanced movement, and etc...
 <h1>Method names:</h1>
 (There are none)
@@ -63,6 +63,8 @@ public class PlayerMovement : MonoBehaviour
     public MonoBehaviour sprintTargetComponent;
     public string sprintMethodName;
     public int sprintStaminaUsagePerSecond = 10;
+    public bool intervalInfluencesDrain = false;
+    public int sprintDrainInterval = 1;
     private Coroutine sprintDrainCoroutine;
     [Header("Wall Running")]
     public LayerMask wallLayers;
@@ -94,6 +96,9 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 wallRunStartPosition;
     private int remainingAirJumps;
     private Vector3 originalPosition;
+    [Header("Collision settings")]
+    public bool dynamicImpulse = false;
+    public float impulseMultiplier = 1f;
     [Header("Player event interactions")]
     [Header("On land behavior")]
     public MonoBehaviour landTargetComponent;
@@ -113,6 +118,7 @@ public class PlayerMovement : MonoBehaviour
     private bool stored = false;
     private bool stored2 = false;
     private bool grounded = false;
+    private bool hasAirDashed = false;
     private void Awake()
     {
         rb = gameObject.AddComponent<Rigidbody>();
@@ -211,30 +217,30 @@ public class PlayerMovement : MonoBehaviour
     {
         if (stamina >= dashStaminaUsage || staminaStatRef == null)
         {
-            if (allowDashing)
+            if (!allowDashing) return;
+            bool canDash = grounded || infiniteAirDashes || !hasAirDashed;
+            if (Input.GetKeyDown(KeyCode.Q) && canDash)
             {
-                if (Input.GetKeyDown(KeyCode.Q))
+                if (GameControllerObject != null)
                 {
-                    if (GameControllerObject != null)
-                    {
-                        GameControllerObject.timeSpeed = 0.1f;
-                        activateDashStartAction();
-                    }
+                    GameControllerObject.timeSpeed = 0.1f;
+                    activateDashStartAction();
                 }
-                if (Input.GetKeyUp(KeyCode.Q))
+            }
+            if (Input.GetKeyUp(KeyCode.Q) && canDash)
+            {
+                if (GameControllerObject != null)
                 {
-                    if (GameControllerObject != null)
-                    {
-                        GameControllerObject.timeSpeed = 1f;
-                        activateDashedAction();
-                    }
-                    Vector3 dashDirection = cameraTransform.forward;
-                    dashDirection.y = 0;
-                    dashDirection.Normalize();
-                    if (grounded || !infiniteAirDashes)
-                    {
-                        StartCoroutine(DashRoutine(dashDirection * dashDistance));
-                    }
+                    GameControllerObject.timeSpeed = 1f;
+                    activateDashedAction();
+                }
+                Vector3 dashDirection = cameraTransform.forward;
+                dashDirection.y = 0;
+                dashDirection.Normalize();
+                StartCoroutine(DashRoutine(dashDirection * dashDistance));
+                if (!grounded && !infiniteAirDashes)
+                {
+                    hasAirDashed = true;
                 }
             }
         }
@@ -277,7 +283,6 @@ public class PlayerMovement : MonoBehaviour
         }
         if (rechargeDelayCoroutine != null)
             StopCoroutine(rechargeDelayCoroutine);
-
         rechargeDelayCoroutine = StartCoroutine(StartRechargeAfterDelay());
     }
     private IEnumerator StartRechargeAfterDelay()
@@ -391,7 +396,6 @@ public class PlayerMovement : MonoBehaviour
                 moveVertical = 0;
             }
             float currentSpeed = (Input.GetKey(KeyCode.LeftShift) && stamina > 0) ? sprintingSpeed : speed;
-
             if (isGame2D)
             {
                 if (stayInCameraBounds)
@@ -601,8 +605,17 @@ public class PlayerMovement : MonoBehaviour
             if (!grounded)
             {
                 grounded = true;
+                hasAirDashed = false;
                 activateLandAction();
             }
+        }
+        if (dynamicImpulse && collision.rigidbody != null)
+        {
+            float targetMass = collision.rigidbody.mass > 0f ? collision.rigidbody.mass : 1f;
+            Vector3 direction = (collision.transform.position - transform.position).normalized;
+            float speed = rb.velocity.magnitude;
+            Vector3 impulse = direction * (speed * impulseMultiplier / targetMass);
+            collision.rigidbody.AddForce(impulse, ForceMode.Impulse);
         }
     }
     private void OnCollisionExit(Collision collision)
@@ -644,7 +657,11 @@ public class PlayerMovement : MonoBehaviour
         while (true)
         {
             float delay = 1f / sprintStaminaUsagePerSecond;
-            decStamin(1);
+            if (intervalInfluencesDrain)
+            {
+                delay /= sprintDrainInterval;
+            }
+            decStamin(sprintDrainInterval);
             if (stamina <= 0)
             {
                 StopSprintDrain();
