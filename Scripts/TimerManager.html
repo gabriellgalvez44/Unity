@@ -11,7 +11,7 @@
 <left>
 <h1>TimerManager.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1Qe8LR8TA_3c5Z0mR_lI5m0HLkiqpudXr')">Download</button>
-<h1>Version 1:</h1>
+<h1>Version 2:</h1>
 This script is used to manage timers from the <a href=Timer.html>Timer.cs</a> script
 <h1>Method names:</h1>
 Play<br>
@@ -49,22 +49,16 @@ public class TimerManager : MonoBehaviour
         {
             timerComponent = targetObject.GetComponent<Timer>();
             if (timerComponent == null)
-            {
                 Debug.LogError("Timer component not found on the specified GameObject.");
-            }
         }
         else
-        {
             Debug.LogError("Target object is not assigned.");
-        }
     }
     public void Play()
     {
         var timer = GetTimerByName();
         if (timer != null)
-        {
             timer.InternalStart();
-        }
     }
     public void Pause()
     {
@@ -88,9 +82,7 @@ public class TimerManager : MonoBehaviour
     {
         var timer = GetTimerByName();
         if (timer != null)
-        {
             timer.InternalStop();
-        }
     }
     public void Override()
     {
@@ -109,8 +101,7 @@ public class TimerManager : MonoBehaviour
                     timer.remainingTime = timer.totalTimeInSeconds;
                     break;
                 case TimeOverrideMode.Add:
-                    timer.totalTimeInSeconds += seconds;
-                    timer.remainingTime += seconds;
+                    timer.AddTime(seconds);
                     break;
                 case TimeOverrideMode.Subtract:
                     timer.totalTimeInSeconds = Mathf.Max(0f, timer.totalTimeInSeconds - seconds);
@@ -130,9 +121,7 @@ public class TimerManager : MonoBehaviour
         foreach (var timer in timerComponent.timers)
         {
             if (timer.name == timerName)
-            {
                 return timer;
-            }
         }
         Debug.LogWarning($"Timer with name \"{timerName}\" not found.");
         return null;
