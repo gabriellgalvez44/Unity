@@ -11,7 +11,7 @@
 <left>
 <h1>GameControl.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1Oeu9Ut97u8DMN1bVxzHRuNofnmtMPgUw')">Download</button>
-<h1>Version 6:</h1>
+<h1>Version 7:</h1>
 This script is used to manage aspects of your game and open a URL in your searching browser!
 <h1>Method names:</h1>
 LoadScene<br>
@@ -20,9 +20,7 @@ OpenURL<br>
 CloseGame
 </left>
 <right>
-<textarea readonly>using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+<textarea readonly>using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -32,10 +30,12 @@ public class GameControl : MonoBehaviour
 {
     [Header("Scene Settings")]
 #if UNITY_EDITOR
-    public SceneAsset sceneToLoadAsset;
+    public SceneAsset[] scenesToLoadAsset;
 #endif
+    public int sceneNumber = 0;
+    [HideInInspector]
+    public string[] scenesToLoad;
     public float timeSpeed = 1f;
-    [HideInInspector] public string sceneToLoad;
     [Header("Logging Settings")]
     public LogType logType = LogType.Normal;
     [TextArea] public string logText = "Enter your custom log message here";
@@ -53,19 +53,30 @@ public class GameControl : MonoBehaviour
     }
     public void LoadScene()
     {
-        if (string.IsNullOrEmpty(sceneToLoad))
+        if (scenesToLoad == null || scenesToLoad.Length == 0)
         {
-            Debug.LogError("No scene name assigned to load!");
+            Debug.LogError("No scenes assigned in the scenesToLoad array!");
+            return;
+        }
+        if (sceneNumber < 0 || sceneNumber >= scenesToLoad.Length)
+        {
+            Debug.LogError("Scene number is out of range!");
+            return;
+        }
+        string selectedScene = scenesToLoad[sceneNumber];
+        if (string.IsNullOrEmpty(selectedScene))
+        {
+            Debug.LogError("Selected scene name is null or empty!");
             return;
         }
         string currentSceneName = SceneManager.GetActiveScene().name;
-        if (sceneToLoad == currentSceneName)
+        if (selectedScene == currentSceneName)
         {
             SceneManager.LoadScene(currentSceneName);
         }
         else
         {
-            SceneManager.LoadScene(sceneToLoad);
+            SceneManager.LoadScene(selectedScene);
         }
     }
     public void Log()
@@ -106,14 +117,25 @@ public class GameControl : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        if (sceneToLoadAsset != null)
+        if (scenesToLoadAsset != null && scenesToLoadAsset.Length > 0)
         {
-            string path = AssetDatabase.GetAssetPath(sceneToLoadAsset);
-            sceneToLoad = System.IO.Path.GetFileNameWithoutExtension(path);
+            scenesToLoad = new string[scenesToLoadAsset.Length];
+            for (int i = 0; i < scenesToLoadAsset.Length; i++)
+            {
+                if (scenesToLoadAsset[i] != null)
+                {
+                    string path = AssetDatabase.GetAssetPath(scenesToLoadAsset[i]);
+                    scenesToLoad[i] = System.IO.Path.GetFileNameWithoutExtension(path);
+                }
+                else
+                {
+                    scenesToLoad[i] = "";
+                }
+            }
         }
         else
         {
-            sceneToLoad = "";
+            scenesToLoad = new string[0];
         }
     }
 #endif
