@@ -11,7 +11,7 @@
 <left>
 <h1>CameraRotator.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1H1lw20c8D353fb4glPSr8IuRl5LtHKV5')">Download</button>
-<h1>Version 11:</h1>
+<h1>Version 12:</h1>
 This script is used to allow the camera to rotate in a 3D space with your mouse
 <h1>Method names:</h1>
 (There are none)
@@ -20,6 +20,7 @@ This script is used to allow the camera to rotate in a 3D space with your mouse
 <textarea readonly>using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CameraRotator : MonoBehaviour
 {
@@ -30,7 +31,7 @@ public class CameraRotator : MonoBehaviour
     public float mouseSensitivity = 100f;
     public bool lockDirectVertical = true;
     public float lockOnDegrees = 90f;
-    public LayerMask seeThroughLayer;
+    public string seeThroughTag;
     [Header("Rotation")]
     public float cameraX;
     public float cameraY;
@@ -45,7 +46,7 @@ public class CameraRotator : MonoBehaviour
     private Camera mainCamera;
     private void Start()
     {
-        mouseSensitivity *= 2f;
+        mouseSensitivity *= .75f;
         speed *= 10;
         if (autoLockCursor)
         {
@@ -65,7 +66,7 @@ public class CameraRotator : MonoBehaviour
                 parent = parent.parent;
             }
         }
-        if (seeThroughLayer == 0)
+        if (string.IsNullOrEmpty(seeThroughTag))
             return;
         Camera mainCamera = GetComponent<Camera>();
         if (mainCamera == null)
@@ -74,25 +75,36 @@ public class CameraRotator : MonoBehaviour
         seeThroughCamObj.transform.SetParent(transform, false);
         seeThroughCam = seeThroughCamObj.AddComponent<Camera>();
         seeThroughCam.CopyFrom(mainCamera);
-        seeThroughCam.cullingMask = seeThroughLayer;
+        int tempLayer = 31;
+        GameObject[] seeThroughObjects = GameObject.FindGameObjectsWithTag(seeThroughTag);
+        foreach (GameObject obj in seeThroughObjects)
+        {
+            obj.layer = tempLayer;
+        }
+        seeThroughCam.cullingMask = 1 << tempLayer;
         seeThroughCam.clearFlags = CameraClearFlags.Depth;
         seeThroughCam.depth = mainCamera.depth + 1;
-        mainCamera.cullingMask &= ~seeThroughLayer;
+        mainCamera.cullingMask &= ~(1 << tempLayer);
     }
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
-        if (Input.GetMouseButtonDown(0))
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        Vector2 mouseDelta = Vector2.zero;
+        if (Mouse.current != null)
+        {
+            mouseDelta = Mouse.current.delta.ReadValue();
+        }
+        float mouseX = mouseDelta.x * mouseSensitivity * Time.deltaTime;
+        float mouseY = mouseDelta.y * mouseSensitivity * Time.deltaTime;
         if (rep > 0)
         {
             rep--;
