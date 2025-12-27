@@ -11,18 +11,19 @@
 <left>
 <h1>PlayerMovement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1d8swOtqjk1MAse-dpjCyam07MxvZEDX1')">Download</button>
-<h1>Version 17:</h1>
+<h1>Version 18:</h1>
 This script is used to make an object considered the player and add keybinding controls for moving, advanced movement, and etc...
 <h1>Method names:</h1>
 (There are none)
 <h1>IMPORTANT:</h1>
 When using 2D mode, your project must still be a 3D project and you have to use 3D objects, just make your camera orthographic and follow a bit differently!<br><br>
-In addition, this script requires the usage of the <a href=GamControl.html>GameControl.cs</a> script to work
+In addition, this script requires the usage of the <a href=GamControl.html>GameControl.cs</a> and the <a href=StatCreator.html>StatCreator.cs</a> script to work
 </left>
 <right>
 <textarea readonly>using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -67,7 +68,7 @@ public class PlayerMovement : MonoBehaviour
     public int sprintDrainInterval = 1;
     private Coroutine sprintDrainCoroutine;
     [Header("Wall Running")]
-    public LayerMask wallLayers;
+    public string wallTag;
     public float wallRunCameraTilt = 15f;
     public float tiltSpeed = 5f;
     [Header("Dashing")]
@@ -78,7 +79,7 @@ public class PlayerMovement : MonoBehaviour
     public float dashDistance = 5f;
     public MonoBehaviour dashedTargetComponent;
     public string dashedMethodName;
-    public LayerMask passthroughLayer;
+    public string passthroughTag;
     public bool infiniteAirDashes = false;
     [Header("Jumping")]
     public int jumpStaminaUsage = 5;
@@ -186,25 +187,25 @@ public class PlayerMovement : MonoBehaviour
     {
         if (stopExternalAccelleration)
         {
-            rb.velocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
         if (!gravity)
         {
-            if (Input.GetKey(KeyCode.Space) && !Input.GetKey(KeyCode.LeftControl) && !Input.GetKey(KeyCode.RightControl))
+            if ((Keyboard.current != null && Keyboard.current.spaceKey.isPressed) && !(Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed) && !(Keyboard.current != null && Keyboard.current.rightCtrlKey.isPressed))
             {
-                Vector3 currentVelocity = rb.velocity;
-                rb.velocity = new Vector3(currentVelocity.x, jumpAcceleration, currentVelocity.z);
+                Vector3 currentVelocity = rb.linearVelocity;
+                rb.linearVelocity = new Vector3(currentVelocity.x, jumpAcceleration, currentVelocity.z);
             }
-            else if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+            else if ((Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed) || (Keyboard.current != null && Keyboard.current.rightCtrlKey.isPressed))
             {
-                Vector3 currentVelocity = rb.velocity;
-                rb.velocity = new Vector3(currentVelocity.x, -jumpAcceleration, currentVelocity.z);
+                Vector3 currentVelocity = rb.linearVelocity;
+                rb.linearVelocity = new Vector3(currentVelocity.x, -jumpAcceleration, currentVelocity.z);
             }
             else
             {
-                Vector3 currentVelocity = rb.velocity;
-                rb.velocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
+                Vector3 currentVelocity = rb.linearVelocity;
+                rb.linearVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
             }
         }
         HandleMovement();
@@ -219,7 +220,7 @@ public class PlayerMovement : MonoBehaviour
         {
             if (!allowDashing) return;
             bool canDash = grounded || infiniteAirDashes || !hasAirDashed;
-            if (Input.GetKeyDown(KeyCode.Q) && canDash)
+            if ((Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame) && canDash)
             {
                 if (GameControllerObject != null)
                 {
@@ -227,7 +228,7 @@ public class PlayerMovement : MonoBehaviour
                     activateDashStartAction();
                 }
             }
-            if (Input.GetKeyUp(KeyCode.Q) && canDash)
+            if ((Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame) && canDash)
             {
                 if (GameControllerObject != null)
                 {
@@ -257,7 +258,7 @@ public class PlayerMovement : MonoBehaviour
             Vector3 newPos = Vector3.Lerp(start, end, t / 0.05f);
             if (Physics.Raycast(start, newPos - start, out hit, (newPos - start).magnitude))
             {
-                if (((1 << hit.collider.gameObject.layer) & passthroughLayer) == 0)
+                if (!string.IsNullOrEmpty(passthroughTag) && !hit.collider.gameObject.CompareTag(passthroughTag))
                 {
                     newPos = hit.point;
                     break;
@@ -389,13 +390,21 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!isWallRunning)
         {
-            float moveHorizontal = Input.GetAxis("Horizontal");
-            float moveVertical = Input.GetAxis("Vertical");
+            float moveHorizontal = 0f;
+            float moveVertical = 0f;
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveHorizontal -= 1f;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveHorizontal += 1f;
+
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveVertical += 1f;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveVertical -= 1f;
+            }
             if (isGame2D && !allowVerticalMovement)
             {
                 moveVertical = 0;
             }
-            float currentSpeed = (Input.GetKey(KeyCode.LeftShift) && stamina > 0) ? sprintingSpeed : speed;
+            float currentSpeed = ((Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) && stamina > 0) ? sprintingSpeed : speed;
             if (isGame2D)
             {
                 if (stayInCameraBounds)
@@ -414,11 +423,11 @@ public class PlayerMovement : MonoBehaviour
                 }
                 if (!gravity)
                 {
-                    rb.velocity = new Vector3(moveHorizontal * currentSpeed, moveVertical * currentSpeed, 0);
+                    rb.linearVelocity = new Vector3(moveHorizontal * currentSpeed, moveVertical * currentSpeed, 0);
                 }
                 else
                 {
-                    rb.velocity = new Vector3(moveHorizontal * currentSpeed, rb.velocity.y, 0);
+                    rb.linearVelocity = new Vector3(moveHorizontal * currentSpeed, rb.linearVelocity.y, 0);
                 }
             }
             else
@@ -435,14 +444,14 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            if (Input.GetKey(KeyCode.W))
+            if (Keyboard.current != null && Keyboard.current.wKey.isPressed)
             {
-                float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintingSpeed : speed;
+                float currentSpeed = (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) ? sprintingSpeed : speed;
                 if (isGame2D)
                 {
                     if (!gravity)
                     {
-                        rb.velocity = new Vector3(0, currentSpeed, 0);
+                        rb.linearVelocity = new Vector3(0, currentSpeed, 0);
                     }
                 }
                 else
@@ -464,14 +473,14 @@ public class PlayerMovement : MonoBehaviour
             }
             else
             {
-                rb.velocity = Vector3.zero;
+                rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
         }
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.LeftShift))
+        if ((Keyboard.current != null && Keyboard.current.wKey.isPressed) || (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed))
         {
             int currentStamina = staminaStatRef != null ? staminaStatRef.intValue : stamina;
-            if (Input.GetKey(KeyCode.W) && (!Input.GetKey(KeyCode.LeftShift) || currentStamina <= 0))
+            if ((Keyboard.current != null && Keyboard.current.wKey.isPressed) && (!(Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) || currentStamina <= 0))
             {
                 if (!stored2)
                 {
@@ -480,7 +489,7 @@ public class PlayerMovement : MonoBehaviour
                     activateWalkAction();
                 }
             }
-            else if (Input.GetKey(KeyCode.W) && Input.GetKey(KeyCode.LeftShift) && currentStamina > 0)
+            else if ((Keyboard.current != null && Keyboard.current.wKey.isPressed) && (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) && currentStamina > 0)
             {
                 if (stored2 && stored)
                 {
@@ -496,7 +505,7 @@ public class PlayerMovement : MonoBehaviour
                     }
                 }
             }
-            else if (!Input.GetKey(KeyCode.W) && stored)
+            else if (!(Keyboard.current != null && Keyboard.current.wKey.isPressed) && stored)
             {
                 stored = false;
                 activateStillAction();
@@ -541,7 +550,7 @@ public class PlayerMovement : MonoBehaviour
         this.wallNormal = wallNormal;
         rb.useGravity = false;
         wallRunStartPosition = transform.position;
-        rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         Vector3 wallDirection = Vector3.Cross(wallNormal, Vector3.up);
         isOnRightSide = Vector3.Dot(cameraTransform.right, wallNormal) < 0;
         originalTilt = cameraTransform.localEulerAngles.z;
@@ -566,12 +575,12 @@ public class PlayerMovement : MonoBehaviour
     private void HandleJump()
     {
         if (!allowJump) return;
-        if (Input.GetKeyDown(KeyCode.Space))
+        if ((Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame))
         {
             if (stamina < jumpStaminaUsage && staminaStatRef != null) return;
             if (isWallRunning)
             {
-                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 Vector3 jumpDirection = (Vector3.up + wallNormal).normalized;
                 rb.AddForce(jumpDirection * jumpAcceleration, ForceMode.VelocityChange);
                 StopWallRunning();
@@ -579,14 +588,14 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (IsGrounded())
             {
-                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 rb.AddForce(Vector3.up * jumpAcceleration, ForceMode.VelocityChange);
                 ResetAirJumps();
                 activateJumpAction();
             }
             else if (remainingAirJumps > 0)
             {
-                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 rb.AddForce(Vector3.up * jumpAcceleration, ForceMode.VelocityChange);
                 remainingAirJumps--;
                 activateAirJumpAction();
@@ -613,7 +622,7 @@ public class PlayerMovement : MonoBehaviour
         {
             float targetMass = collision.rigidbody.mass > 0f ? collision.rigidbody.mass : 1f;
             Vector3 direction = (collision.transform.position - transform.position).normalized;
-            float speed = rb.velocity.magnitude;
+            float speed = rb.linearVelocity.magnitude;
             Vector3 impulse = direction * (speed * impulseMultiplier / targetMass);
             collision.rigidbody.AddForce(impulse, ForceMode.Impulse);
         }
@@ -627,7 +636,7 @@ public class PlayerMovement : MonoBehaviour
     }
     private bool IsWallRunnable(Collision collision)
     {
-        return (wallLayers.value & (1 << collision.gameObject.layer)) > 0;
+        return collision.gameObject.CompareTag(wallTag);
     }
     private bool IsGrounded()
     {
