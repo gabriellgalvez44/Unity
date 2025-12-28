@@ -11,7 +11,7 @@
 <left>
 <h1>PlayerMovement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1d8swOtqjk1MAse-dpjCyam07MxvZEDX1')">Download</button>
-<h1>Version 18:</h1>
+<h1>Version 19:</h1>
 This script is used to make an object considered the player and add keybinding controls for moving, advanced movement, and etc...
 <h1>Method names:</h1>
 (There are none)
@@ -100,6 +100,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Collision settings")]
     public bool dynamicImpulse = false;
     public float impulseMultiplier = 1f;
+    public float objectMass = 1f;
     [Header("Player event interactions")]
     [Header("On land behavior")]
     public MonoBehaviour landTargetComponent;
@@ -128,6 +129,7 @@ public class PlayerMovement : MonoBehaviour
             rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         }
         rb.useGravity = gravity;
+        rb.mass = objectMass;
     }
     private void Start()
     {
@@ -405,6 +407,7 @@ public class PlayerMovement : MonoBehaviour
                 moveVertical = 0;
             }
             float currentSpeed = ((Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) && stamina > 0) ? sprintingSpeed : speed;
+            currentSpeed = ResolveBlockedSpeed(currentSpeed);
             if (isGame2D)
             {
                 if (stayInCameraBounds)
@@ -447,6 +450,7 @@ public class PlayerMovement : MonoBehaviour
             if (Keyboard.current != null && Keyboard.current.wKey.isPressed)
             {
                 float currentSpeed = (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) ? sprintingSpeed : speed;
+                currentSpeed = ResolveBlockedSpeed(currentSpeed);
                 if (isGame2D)
                 {
                     if (!gravity)
@@ -520,6 +524,31 @@ public class PlayerMovement : MonoBehaviour
                 activateStillAction();
             }
         }
+    }
+    float ResolveBlockedSpeed(float intSpe)
+    {
+        float blockDistance = 0.6f;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        Vector3 fwd = cameraTransform.forward;
+        fwd.y = 0f;
+        fwd.Normalize();
+        Vector3 rgt = cameraTransform.right;
+        rgt.y = 0f;
+        rgt.Normalize();
+        float mvV = 0f;
+        float mvH = 0f;
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) mvV += 1f;
+            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) mvV -= 1f;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) mvH += 1f;
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) mvH -= 1f;
+        }
+        if (mvV > 0f && Physics.Raycast(origin,  fwd, blockDistance))  return 0f;
+        if (mvV < 0f && Physics.Raycast(origin, -fwd, blockDistance))  return 0f;
+        if (mvH > 0f && Physics.Raycast(origin,  rgt, blockDistance))  return 0f;
+        if (mvH < 0f && Physics.Raycast(origin, -rgt, blockDistance))  return 0f;
+        return intSpe;
     }
     private float originalTilt;
     private float currentTargetTilt;
