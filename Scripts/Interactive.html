@@ -11,7 +11,7 @@
 <left>
 <h1>Interactive.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1SAN-fmYUnnIqMuPCz17DHjd-kNCbMFxw')">Download</button>
-<h1>Version 3:</h1>
+<h1>Version 4:</h1>
 This script is used to make something happen when interacting with an object, this works together with the <a href=OpenUI.cs>OpenUI.cs</a> script so if you don't use that other script, it won't work properly
 <h1>Method names:</h1>
 (There are none)
@@ -29,6 +29,7 @@ public class Interactive : MonoBehaviour
     public string methodNameToActivate;
     public Camera camera;
     public float maxDistance = 5f;
+    public bool allowInteraction = true;
     private bool canInteract = true;
     private void Start()
     {
@@ -37,18 +38,33 @@ public class Interactive : MonoBehaviour
     }
     private void Update()
     {
-        if (camera == null || uiObject == null)
+        if (camera == null || uiObject == null || !allowInteraction)
+        {
+            if (uiObject.activeSelf)
+                uiObject.SetActive(false);
             return;
+        }
         float distance = Vector3.Distance(camera.transform.position, transform.position);
         Vector3 screenPoint = camera.WorldToViewportPoint(transform.position);
         bool isInView =
             screenPoint.z > 0 &&
             screenPoint.x > 0 && screenPoint.x < 1 &&
             screenPoint.y > 0 && screenPoint.y < 1;
-        bool shouldShowUI = isInView && distance <= maxDistance;
-        if (uiObject.activeSelf != shouldShowUI)
-            uiObject.SetActive(shouldShowUI);
-        if (shouldShowUI &&
+        bool hasLineOfSight = false;
+        if (distance <= maxDistance)
+        {
+            Vector3 direction = (transform.position - camera.transform.position).normalized;
+            RaycastHit hit;
+            if (Physics.Raycast(camera.transform.position, direction, out hit, maxDistance))
+            {
+                if (hit.collider != null && hit.collider.gameObject == gameObject)
+                    hasLineOfSight = true;
+            }
+        }
+        bool isInteractable = allowInteraction && isInView && distance <= maxDistance && hasLineOfSight;
+        if (uiObject.activeSelf != isInteractable)
+            uiObject.SetActive(isInteractable);
+        if (isInteractable &&
             canInteract &&
             Keyboard.current != null &&
             Keyboard.current.eKey.wasPressedThisFrame)
