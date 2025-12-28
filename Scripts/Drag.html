@@ -11,7 +11,7 @@
 <left>
 <h1>Drag.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=15hwzbP8l3VMPt1BxeqAh6EKEgl4GkbKz')">Download</button>
-<h1>Version 3:</h1>
+<h1>Version 4:</h1>
 This script is used to make objects to be able to drag others while colliding together
 <h1>Method names:</h1>
 (There are none)
@@ -25,7 +25,7 @@ public class Drag : MonoBehaviour
 {
     [Header("Drag")]
     public GameObject[] draggableObjects;
-    public LayerMask draggableLayers;
+    public string[] draggableTags;
     [Header("Side Activation")]
     public bool useTop = true;
     public bool useBottom = false;
@@ -87,7 +87,7 @@ public class Drag : MonoBehaviour
                 return;
             }
         }
-        if (IsInLayerMask(other, draggableLayers))
+        if (IsTagged(other))
         {
             collidingObjects.Add(other);
             if (!previousPositions.ContainsKey(other))
@@ -103,9 +103,13 @@ public class Drag : MonoBehaviour
             collidingObjects.Remove(collision.gameObject);
         }
     }
-    private bool IsInLayerMask(GameObject obj, LayerMask mask)
+    private bool IsTagged(GameObject obj)
     {
-        return (mask.value & (1 << obj.layer)) != 0;
+        foreach (string tag in draggableTags)
+        {
+            if (obj.CompareTag(tag)) return true;
+        }
+        return false;
     }
 }</textarea>
 </right>
