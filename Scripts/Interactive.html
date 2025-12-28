@@ -11,7 +11,7 @@
 <left>
 <h1>Interactive.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1SAN-fmYUnnIqMuPCz17DHjd-kNCbMFxw')">Download</button>
-<h1>Version 2:</h1>
+<h1>Version 3:</h1>
 This script is used to make something happen when interacting with an object, this works together with the <a href=OpenUI.cs>OpenUI.cs</a> script so if you don't use that other script, it won't work properly
 <h1>Method names:</h1>
 (There are none)
@@ -20,46 +20,47 @@ This script is used to make something happen when interacting with an object, th
 <textarea readonly>using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Interactive : MonoBehaviour
 {
-    public Canvas uiCanvas;
+    public GameObject uiObject;
     public MonoBehaviour componentToActivate;
     public string methodNameToActivate;
     public Camera camera;
     public float maxDistance = 5f;
     private bool canInteract = true;
-    private void OnEnable()
+    private void Start()
     {
-        canInteract = true;
-    }
-    private void OnDisable()
-    {
-        canInteract = false;
+        if (uiObject != null)
+            uiObject.SetActive(false);
     }
     private void Update()
     {
-        if (!gameObject.activeInHierarchy)
+        if (camera == null || uiObject == null)
             return;
-        if (uiCanvas != null && uiCanvas.gameObject.activeInHierarchy)
+        float distance = Vector3.Distance(camera.transform.position, transform.position);
+        Vector3 screenPoint = camera.WorldToViewportPoint(transform.position);
+        bool isInView =
+            screenPoint.z > 0 &&
+            screenPoint.x > 0 && screenPoint.x < 1 &&
+            screenPoint.y > 0 && screenPoint.y < 1;
+        bool shouldShowUI = isInView && distance <= maxDistance;
+        if (uiObject.activeSelf != shouldShowUI)
+            uiObject.SetActive(shouldShowUI);
+        if (shouldShowUI &&
+            canInteract &&
+            Keyboard.current != null &&
+            Keyboard.current.eKey.wasPressedThisFrame)
         {
-            float distance = Vector3.Distance(camera.transform.position, transform.position);
-            bool isCloseEnough = distance <= maxDistance;
-            Vector3 screenPoint = camera.WorldToViewportPoint(transform.position);
-            bool isInView = screenPoint.z > 0 && screenPoint.x > 0 && screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
-            if (isInView && isCloseEnough && Input.GetKeyDown(KeyCode.E) && canInteract)
-            {
-                ActivateComponent();
-                StartCoroutine(InteractionCooldown());
-            }
+            ActivateComponent();
+            StartCoroutine(InteractionCooldown());
         }
     }
     private void ActivateComponent()
     {
         if (componentToActivate != null && !string.IsNullOrEmpty(methodNameToActivate))
-        {
             componentToActivate.Invoke(methodNameToActivate, 0f);
-        }
     }
     private IEnumerator InteractionCooldown()
     {
