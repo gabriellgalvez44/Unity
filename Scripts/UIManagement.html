@@ -11,7 +11,7 @@
 <left>
 <h1>UIManagement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1FuxBCjOiFzW7ntO8x1P_bdE4eXyfcDDg')">Download</button>
-<h1>Version 13:</h1>
+<h1>Version 14:</h1>
 This script is used to override aspects of some objects in UI canvas's and detect if a text object is a certain text, for the detecting, if they match, not, and/or none of the texts do, what will they do each
 <h1>Method names:</h1>
 Activate
@@ -35,6 +35,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Reflection;
+using UnityEngine.InputSystem;
 
 public class UIManagement : MonoBehaviour
 {
@@ -82,7 +83,7 @@ public class UIManagement : MonoBehaviour
     public ButtonAction[] buttonActions;
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             Vector2 mousePos = Input.mousePosition;
             foreach (var action in buttonActions)
