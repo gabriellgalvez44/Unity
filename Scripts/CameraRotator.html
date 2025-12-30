@@ -11,7 +11,7 @@
 <left>
 <h1>CameraRotator.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1H1lw20c8D353fb4glPSr8IuRl5LtHKV5')">Download</button>
-<h1>Version 12:</h1>
+<h1>Version 13:</h1>
 This script is used to allow the camera to rotate in a 3D space with your mouse
 <h1>Method names:</h1>
 (There are none)
@@ -26,7 +26,13 @@ public class CameraRotator : MonoBehaviour
 {
     [Header("Client & player identifyer")]
     public bool autoLockCursor = true;
+    public bool cursorLocked = false;
     public Transform playerBody;
+    [Header("Cursor actions")]
+    public MonoBehaviour onLockedComponent;
+    public string onLockedMethodName;
+    public MonoBehaviour onUnlockedComponent;
+    public string onUnlockedMethodName;
     [Header("Camera control")]
     public float mouseSensitivity = 100f;
     public bool lockDirectVertical = true;
@@ -44,6 +50,7 @@ public class CameraRotator : MonoBehaviour
     private bool isChildOfPlayer;
     private Camera seeThroughCam;
     private Camera mainCamera;
+    private bool lastCursorLockedState;
     private void Start()
     {
         mouseSensitivity *= .75f;
@@ -53,6 +60,8 @@ public class CameraRotator : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+        cursorLocked = Cursor.lockState == CursorLockMode.Locked;
+        lastCursorLockedState = cursorLocked;
         if (playerBody != null)
         {
             Transform parent = transform.parent;
@@ -68,7 +77,7 @@ public class CameraRotator : MonoBehaviour
         }
         if (string.IsNullOrEmpty(seeThroughTag))
             return;
-        Camera mainCamera = GetComponent<Camera>();
+        mainCamera = GetComponent<Camera>();
         if (mainCamera == null)
             return;
         GameObject seeThroughCamObj = new GameObject("SeeThroughCamera");
@@ -98,6 +107,23 @@ public class CameraRotator : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+        cursorLocked = Cursor.lockState == CursorLockMode.Locked;
+        if (cursorLocked != lastCursorLockedState)
+        {
+            if (cursorLocked)
+            {
+                if (onLockedComponent != null && !string.IsNullOrEmpty(onLockedMethodName))
+                    onLockedComponent.SendMessage(onLockedMethodName, SendMessageOptions.DontRequireReceiver);
+            }
+            else
+            {
+                if (onUnlockedComponent != null && !string.IsNullOrEmpty(onUnlockedMethodName))
+                    onUnlockedComponent.SendMessage(onUnlockedMethodName, SendMessageOptions.DontRequireReceiver);
+            }
+            lastCursorLockedState = cursorLocked;
+        }
+        if (!cursorLocked)
+            return;
         Vector2 mouseDelta = Vector2.zero;
         if (Mouse.current != null)
         {
@@ -131,6 +157,8 @@ public class CameraRotator : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        if (!cursorLocked)
+            return;
         if (useInterval && playerBody != null)
         {
             float cameraYaw = cameraX;
