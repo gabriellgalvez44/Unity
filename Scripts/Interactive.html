@@ -11,8 +11,8 @@
 <left>
 <h1>Interactive.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1SAN-fmYUnnIqMuPCz17DHjd-kNCbMFxw')">Download</button>
-<h1>Version 4:</h1>
-This script is used to make something happen when interacting with an object, this works together with the <a href=OpenUI.cs>OpenUI.cs</a> script so if you don't use that other script, it won't work properly
+<h1>Version 5:</h1>
+This script is used to make something happen when interacting with an object
 <h1>Method names:</h1>
 (There are none)
 </left>
@@ -29,8 +29,12 @@ public class Interactive : MonoBehaviour
     public string methodNameToActivate;
     public Camera camera;
     public float maxDistance = 5f;
+    public float interactTime = 0f;
     public bool allowInteraction = true;
+    public bool disableOnInteract = false;
+    public float resetDelay = 0f;
     private bool canInteract = true;
+    private float interactTimer = 0f;
     private void Start()
     {
         if (uiObject != null)
@@ -42,6 +46,7 @@ public class Interactive : MonoBehaviour
         {
             if (uiObject.activeSelf)
                 uiObject.SetActive(false);
+            interactTimer = 0f;
             return;
         }
         float distance = Vector3.Distance(camera.transform.position, transform.position);
@@ -64,14 +69,41 @@ public class Interactive : MonoBehaviour
         bool isInteractable = allowInteraction && isInView && distance <= maxDistance && hasLineOfSight;
         if (uiObject.activeSelf != isInteractable)
             uiObject.SetActive(isInteractable);
-        if (isInteractable &&
-            canInteract &&
-            Keyboard.current != null &&
-            Keyboard.current.eKey.wasPressedThisFrame)
+        if (!isInteractable || !canInteract || Keyboard.current == null)
         {
-            ActivateComponent();
-            StartCoroutine(InteractionCooldown());
+            interactTimer = 0f;
+            return;
         }
+        if (Keyboard.current.eKey.isPressed)
+        {
+            if (interactTime <= 0f)
+            {
+                if (Keyboard.current.eKey.wasPressedThisFrame)
+                    CompleteInteraction();
+            }
+            else
+            {
+                interactTimer += Time.deltaTime;
+
+                if (interactTimer >= interactTime)
+                    CompleteInteraction();
+            }
+        }
+        else
+        {
+            interactTimer = 0f;
+        }
+    }
+    private void CompleteInteraction()
+    {
+        ActivateComponent();
+        interactTimer = 0f;
+        if (disableOnInteract)
+            allowInteraction = false;
+        if (resetDelay > 0f)
+            StartCoroutine(ResetInteraction());
+
+        StartCoroutine(InteractionCooldown());
     }
     private void ActivateComponent()
     {
@@ -83,6 +115,11 @@ public class Interactive : MonoBehaviour
         canInteract = false;
         yield return new WaitForSeconds(0.3f);
         canInteract = true;
+    }
+    private IEnumerator ResetInteraction()
+    {
+        yield return new WaitForSeconds(resetDelay);
+        allowInteraction = true;
     }
 }</textarea>
 </right>
