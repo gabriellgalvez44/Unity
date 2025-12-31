@@ -11,7 +11,7 @@
 <left>
 <h1>GameControl.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1Oeu9Ut97u8DMN1bVxzHRuNofnmtMPgUw')">Download</button>
-<h1>Version 8:</h1>
+<h1>Version 7:</h1>
 This script is used to manage aspects of your game and open a URL in your searching browser!
 <h1>Method names:</h1>
 LoadScene<br>
@@ -35,7 +35,6 @@ public class GameControl : MonoBehaviour
     public int sceneNumber = 0;
     [HideInInspector]
     public string[] scenesToLoad;
-    public GameObject[] persistentObjects;
     public float timeSpeed = 1f;
     [Header("Logging Settings")]
     public LogType logType = LogType.Normal;
@@ -47,19 +46,6 @@ public class GameControl : MonoBehaviour
         Normal,
         Warning,
         Error
-    }
-    private void Awake()
-    {
-        if (persistentObjects != null)
-        {
-            for (int i = 0; i < persistentObjects.Length; i++)
-            {
-                if (persistentObjects[i] != null)
-                {
-                    DontDestroyOnLoad(persistentObjects[i]);
-                }
-            }
-        }
     }
     void Update()
     {
