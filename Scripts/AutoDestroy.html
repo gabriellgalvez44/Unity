@@ -11,7 +11,7 @@
 <left>
 <h1>AutoDestroy.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1WzJbGyW9UBDgfsBBv8QDxP_-cOLUM7CV')">Download</button>
-<h1>Version 1:</h1>
+<h1>Version 2:</h1>
 This script is used to determine if the object auto destroys based on a timer and/or a collision!
 <h1>Method names:</h1>
 (There are none)
@@ -27,33 +27,42 @@ public class AutoDestroy : MonoBehaviour
     public bool onCollision = false;
     public float destroyAfterTime = 5f;
     public float collisionDelay = 0f;
-    public LayerMask destroyOnCollisionLayers;
-    private void Start()
+    public string[] destroyOnCollisionTags;
+    void Start()
     {
         if (isTimed)
-        {
             Destroy(gameObject, destroyAfterTime);
-        }
     }
-    private void OnCollisionEnter(Collision collision)
+    void OnCollisionEnter(Collision collision)
     {
-        if (onCollision && IsInDestroyLayer(collision.gameObject))
+        if (!onCollision) return;
+        if (!HasMatchingTag(collision.gameObject)) return;
+        TriggerDestroy();
+    }
+    void OnTriggerEnter(Collider other)
+    {
+        if (!onCollision) return;
+        if (!HasMatchingTag(other.gameObject)) return;
+        TriggerDestroy();
+    }
+    bool HasMatchingTag(GameObject obj)
+    {
+        if (destroyOnCollisionTags == null) return false;
+        for (int i = 0; i < destroyOnCollisionTags.Length; i++)
         {
-            if (collisionDelay > 0f)
-            {
-                Invoke("DestroyObject", collisionDelay);
-            }
-            else
-            {
-                DestroyObject();
-            }
+            if (obj.CompareTag(destroyOnCollisionTags[i]))
+                return true;
         }
+        return false;
     }
-    private bool IsInDestroyLayer(GameObject obj)
+    void TriggerDestroy()
     {
-        return ((1 << obj.layer) & destroyOnCollisionLayers) != 0;
+        if (collisionDelay > 0f)
+            Invoke(nameof(DestroyObject), collisionDelay);
+        else
+            DestroyObject();
     }
-    private void DestroyObject()
+    void DestroyObject()
     {
         Destroy(gameObject);
     }
