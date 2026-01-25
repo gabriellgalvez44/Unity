@@ -11,16 +11,17 @@
 <left>
 <h1>ExtendedControls.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=18fhsUsEFuzLesxQzwHES6Yw65VVXVg-c')">Download</button>
-<h1>Version 5:</h1>
+<h1>Version 6:</h1>
   This script is used to add extra/more keybinding controls than the controls from the <a href=PlayerMovement.html>PlayerMovement.cs</a> script
 <h1>Method names:</h1>
 (There are none)
 </left>
 <right>
 <textarea readonly>using System;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ExtendedControls : MonoBehaviour
 {
@@ -47,146 +48,93 @@ public class ExtendedControls : MonoBehaviour
     public string backspaceKeyMethod;
     [Header("Additional Controls")]
     public List<AdditionalControl> additionalControls = new List<AdditionalControl>();
-    private void Update()
+    void Update()
     {
         if (!gameObject.activeSelf) return;
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (Mouse.current != null)
         {
-            InvokeMethod(leftClickComponent, leftClickMethod);
+            if (Mouse.current.leftButton.wasPressedThisFrame)
+                InvokeMethod(leftClickComponent, leftClickMethod);
+            if (Mouse.current.rightButton.wasPressedThisFrame)
+                InvokeMethod(rightClickComponent, rightClickMethod);
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+                InvokeMethod(releaseLeftClickComponent, releaseLeftClickMethod);
+            if (Mouse.current.rightButton.wasReleasedThisFrame)
+                InvokeMethod(releaseRightClickComponent, releaseRightClickMethod);
+            if (Mouse.current.leftButton.isPressed)
+                InvokeMethod(whileHoldingLeftClickComponent, whileHoldingLeftClickMethod);
         }
-        if (Input.GetKeyDown(KeyCode.Mouse1))
+        if (Keyboard.current != null)
         {
-            InvokeMethod(rightClickComponent, rightClickMethod);
-        }
-        if (Input.GetKeyUp(KeyCode.Mouse0))
-        {
-            InvokeMethod(releaseLeftClickComponent, releaseLeftClickMethod);
-        }
-        if (Input.GetKeyUp(KeyCode.Mouse1))
-        {
-            InvokeMethod(releaseRightClickComponent, releaseRightClickMethod);
-        }
-        if (Input.GetKey(KeyCode.Mouse0))
-        {
-            InvokeMethod(whileHoldingLeftClickComponent, whileHoldingLeftClickMethod);
-        }
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            InvokeMethod(enterKeyComponent, enterKeyMethod);
-        }
-        if (Input.GetKeyDown(KeyCode.Backspace))
-        {
-            InvokeMethod(backspaceKeyComponent, backspaceKeyMethod);
-        }
-        foreach (var control in additionalControls)
-        {
-            if (control == null || string.IsNullOrEmpty(control.Key)) continue;
-            KeyCode keyCode = GetKeyCodeFromString(control.Key);
-            if (Input.GetKeyDown(keyCode))
+            if (Keyboard.current.enterKey.wasPressedThisFrame)
+                InvokeMethod(enterKeyComponent, enterKeyMethod);
+            if (Keyboard.current.backspaceKey.wasPressedThisFrame)
+                InvokeMethod(backspaceKeyComponent, backspaceKeyMethod);
+            foreach (var control in additionalControls)
             {
-                InvokeMethod(control.pressComponent, control.pressMethod);
-            }
-            if (Input.GetKeyUp(keyCode))
-            {
-                InvokeMethod(control.releaseComponent, control.releaseMethod);
+                if (control == null || string.IsNullOrEmpty(control.Key)) continue;
+                Key key = GetKeyFromString(control.Key);
+                if (key == Key.None) continue;
+                if (Keyboard.current[key].wasPressedThisFrame)
+                    InvokeMethod(control.pressComponent, control.pressMethod);
+                if (Keyboard.current[key].wasReleasedThisFrame)
+                    InvokeMethod(control.releaseComponent, control.releaseMethod);
             }
         }
     }
-    private KeyCode GetKeyCodeFromString(string key)
+    Key GetKeyFromString(string key)
     {
+        key = key.ToUpper();
         if (int.TryParse(key, out int number))
         {
             if (number >= 0 && number <= 9)
-            {
-                return (KeyCode)Enum.Parse(typeof(KeyCode), $"Alpha{number}");
-            }
+                return (Key)Enum.Parse(typeof(Key), $"Digit{number}");
         }
-        key = key.ToUpper();
-        if (Enum.TryParse<KeyCode>(key, out KeyCode keyCode))
-        {
-            return keyCode;
-        }
+        if (Enum.TryParse<Key>(key, out Key parsedKey))
+            return parsedKey;
         if (key.Length == 1)
         {
-            char typedChar = key[0];
-            switch (typedChar)
+            char c = key[0];
+            switch (c)
             {
-                case '!':
-                    return KeyCode.Alpha1;
-                case '@':
-                    return KeyCode.Alpha2;
-                case '#':
-                    return KeyCode.Alpha3;
-                case '$':
-                    return KeyCode.Alpha4;
-                case '%':
-                    return KeyCode.Alpha5;
-                case '^':
-                    return KeyCode.Alpha6;
-                case '&':
-                    return KeyCode.Alpha7;
-                case '*':
-                    return KeyCode.Alpha8;
-                case '(':
-                    return KeyCode.Alpha9;
-                case ')':
-                    return KeyCode.Alpha0;
-                case '_':
-                    return KeyCode.Minus;
-                case '+':
-                    return KeyCode.Equals;
-                case '=':
-                    return KeyCode.Equals;
-                case '[':
-                    return KeyCode.LeftBracket;
-                case ']':
-                    return KeyCode.RightBracket;
-                case '\\':
-                    return KeyCode.Backslash;
-                case ';':
-                    return KeyCode.Semicolon;
-                case '\'':
-                    return KeyCode.Quote;
-                case ',':
-                    return KeyCode.Comma;
-                case '.':
-                    return KeyCode.Period;
-                case '/':
-                    return KeyCode.Slash;
-                case '~':
-                    return KeyCode.Tilde;
-                default:
-                    return KeyCode.None;
+                case '!': return Key.Digit1;
+                case '@': return Key.Digit2;
+                case '#': return Key.Digit3;
+                case '$': return Key.Digit4;
+                case '%': return Key.Digit5;
+                case '^': return Key.Digit6;
+                case '&': return Key.Digit7;
+                case '*': return Key.Digit8;
+                case '(': return Key.Digit9;
+                case ')': return Key.Digit0;
+                case '-': return Key.Minus;
+                case '_': return Key.Minus;
+                case '=': return Key.Equals;
+                case '+': return Key.Equals;
+                case '[': return Key.LeftBracket;
+                case ']': return Key.RightBracket;
+                case '\\': return Key.Backslash;
+                case ';': return Key.Semicolon;
+                case '\'': return Key.Quote;
+                case ',': return Key.Comma;
+                case '.': return Key.Period;
+                case '/': return Key.Slash;
+                case '`': return Key.Backquote;
             }
         }
-        Debug.LogWarning($"Invalid key '{key}' provided. Returning KeyCode.None.");
-        return KeyCode.None;
+        return Key.None;
     }
-    private void InvokeMethod(Component component, string methodName)
+    void InvokeMethod(Component component, string methodName)
     {
         if (!gameObject.activeSelf) return;
-
-        if (component != null && !string.IsNullOrEmpty(methodName))
-        {
-            var method = component.GetType().GetMethod(methodName);
-            if (method != null)
-            {
-                method.Invoke(component, null);
-            }
-            else
-            {
-                Debug.LogWarning($"Method '{methodName}' not found on component '{component.GetType().Name}' attached to {gameObject.name}.");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"Component or method is not properly set on {gameObject.name}.");
-        }
+        if (component == null || string.IsNullOrEmpty(methodName)) return;
+        var method = component.GetType().GetMethod(methodName);
+        if (method != null)
+            method.Invoke(component, null);
     }
     [Serializable]
     public class AdditionalControl
     {
-        [Tooltip("Single character key to bind to. Will be auto-capitalized.")]
         public string Key;
         public Component pressComponent;
         public string pressMethod;
