@@ -11,7 +11,7 @@
 <left>
 <h1>TimeOfDay.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1BpFVyec7t3qB_l8vjkQY-Vr1Q0AXrs-f')">Download</button>
-<h1>Version 2:</h1>
+<h1>Version 3:</h1>
 This script is used to add daylight cycling to your game for better immersion and/or detail
 <h1>Method names:</h1>
 (There are none)
@@ -20,94 +20,114 @@ This script is used to add daylight cycling to your game for better immersion an
 <textarea readonly>using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Security;
+using System.Security.Cryptography;
 using UnityEngine;
 
 public class TimeOfDay : MonoBehaviour
 {
-    public string startingTime = "12:00 AM";
-    public string dayLength = "5:00";
-    public string currentTime;
-    public bool matchRealtime = false;
     public Light directionalLight;
-    private float currentTimeSeconds;
-    private float totalDaySeconds;
+    public bool matchRealtime;
+    public string startingTime;
+    public string dayLength;
+    public string currentTime;
+    public bool includeSeconds;
+    public bool militaryTime;
+    private float currentTimeInSeconds;
+    float dayLengthSeconds;
     void Start()
     {
-        totalDaySeconds = ConvertDayLengthToSeconds(dayLength);
-        if (!matchRealtime)
-        {
-            currentTimeSeconds = ConvertToSeconds(startingTime);
-        }
-        UpdateLighting();
-    }
-    void Update()
-    {
+        dayLengthSeconds = ParseFlexibleTime(dayLength);
+        if (dayLengthSeconds <= 0f)
+            dayLengthSeconds = 86400f;
         if (matchRealtime)
         {
             DateTime now = DateTime.Now;
-            currentTimeSeconds = now.Hour * 3600 + now.Minute * 60 + now.Second;
+            currentTimeInSeconds = now.Hour * 3600 + now.Minute * 60 + now.Second;
         }
         else
         {
-            currentTimeSeconds += Time.deltaTime * (86400f / totalDaySeconds);
-            if (currentTimeSeconds >= 86400f)
-                currentTimeSeconds -= 86400f;
+            currentTimeInSeconds = ParseClockTime(startingTime);
         }
-        currentTime = SecondsTo12HourString(currentTimeSeconds);
-        UpdateLighting();
+        UpdateCurrentTimeString();
+        UpdateLight();
     }
-    private void UpdateLighting()
+    void Update()
     {
-        if (directionalLight == null) return;
-        float normalizedTime = currentTimeSeconds / 86400f;
-        float sunXRotation = Mathf.Lerp(-90f, 270f, normalizedTime);
-        directionalLight.transform.rotation = Quaternion.Euler(sunXRotation, 0f, 0f);
-    }
-    private float ConvertToSeconds(string time)
-    {
-        if (DateTime.TryParse(time, out DateTime dt))
-            return dt.Hour * 3600 + dt.Minute * 60 + dt.Second;
-        return 0f;
-    }
-    private string SecondsTo12HourString(float seconds)
-    {
-        seconds %= 86400f;
-        int hour = Mathf.FloorToInt(seconds / 3600f);
-        int minute = Mathf.FloorToInt((seconds % 3600f) / 60f);
-        string suffix = hour >= 12 ? "PM" : "AM";
-        hour = hour % 12;
-        if (hour == 0) hour = 12;
-        return $"{hour:00}:{minute:00} {suffix}";
-    }
-    private float ConvertDayLengthToSeconds(string str)
-    {
-        if (string.IsNullOrEmpty(str)) return 300f;
-        string[] parts = str.Split(':');
-        float seconds = 0f;
-        int len = parts.Length;
-        try
+        if (!matchRealtime)
         {
-            if (len == 6)
-                seconds = int.Parse(parts[0]) * 31536000 + int.Parse(parts[1]) * 2592000 + int.Parse(parts[2]) * 86400 +
-                          int.Parse(parts[3]) * 3600 + int.Parse(parts[4]) * 60 + int.Parse(parts[5]);
-            else if (len == 5)
-                seconds = int.Parse(parts[0]) * 2592000 + int.Parse(parts[1]) * 86400 +
-                          int.Parse(parts[2]) * 3600 + int.Parse(parts[3]) * 60 + int.Parse(parts[4]);
-            else if (len == 4)
-                seconds = int.Parse(parts[0]) * 86400 + int.Parse(parts[1]) * 3600 +
-                          int.Parse(parts[2]) * 60 + int.Parse(parts[3]);
-            else if (len == 3)
-                seconds = int.Parse(parts[0]) * 3600 + int.Parse(parts[1]) * 60 + int.Parse(parts[2]);
-            else if (len == 2)
-                seconds = int.Parse(parts[0]) * 60 + int.Parse(parts[1]);
-            else if (len == 1)
-                seconds = float.Parse(parts[0]);
+            currentTimeInSeconds += Time.deltaTime * (86400f / dayLengthSeconds);
+            if (currentTimeInSeconds >= 86400f)
+            {
+                currentTimeInSeconds %= 86400f;
+            }
         }
-        catch
+        UpdateCurrentTimeString();
+        UpdateLight();
+    }
+    void UpdateCurrentTimeString()
+    {
+        int t = Mathf.FloorToInt(currentTimeInSeconds);
+        int h24 = (t / 3600) % 24;
+        int m = (t / 60) % 60;
+        int s = t % 60;
+
+        if (militaryTime)
         {
-            seconds = 300f;
+            currentTime = includeSeconds
+                ? $"{h24:00}:{m:00}:{s:00}"
+                : $"{h24:00}:{m:00}";
         }
-        return seconds;
+        else
+        {
+            bool pm = h24 >= 12;
+            int h12 = h24 % 12;
+            if (h12 == 0) h12 = 12;
+
+            currentTime = includeSeconds
+                ? $"{h12}:{m:00}:{s:00} {(pm ? "PM" : "AM")}"
+                : $"{h12}:{m:00} {(pm ? "PM" : "AM")}";
+        }
+    }
+    void UpdateLight()
+    {
+        if (directionalLight == null)
+            return;
+        float normalized = currentTimeInSeconds / 86400f;
+        float angle = normalized * 360f;
+        directionalLight.transform.rotation = UnityEngine.Quaternion.Euler(angle - 90f, 170f, 0f);
+    }
+    float ParseClockTime(string time)
+    {
+        if (string.IsNullOrEmpty(time))
+            return 0f;
+        time = time.Trim().ToUpper();
+        bool pm = time.EndsWith("PM");
+        bool am = time.EndsWith("AM");
+        time = time.Replace("AM", "").Replace("PM", "").Trim();
+        string[] p = time.Split(':');
+        int h = 0, m = 0, s = 0;
+        if (p.Length >= 1) h = int.Parse(p[0]);
+        if (p.Length >= 2) m = int.Parse(p[1]);
+        if (p.Length >= 3) s = int.Parse(p[2]);
+        if (!militaryTime)
+        {
+            if (pm && h < 12) h += 12;
+            if (am && h == 12) h = 0;
+        }
+        return h * 3600 + m * 60 + s;
+    }
+    float ParseFlexibleTime(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return 0f;
+        string[] p = value.Split(':');
+        int[] mult = { 1, 60, 3600, 86400, 2592000, 31536000 };
+        float total = 0f;
+        for (int i = 0; i < p.Length && i < mult.Length; i++)
+            total += int.Parse(p[p.Length - 1 - i]) * mult[i];
+        return total;
     }
 }</textarea>
 </right>
