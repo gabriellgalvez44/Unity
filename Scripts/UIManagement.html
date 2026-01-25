@@ -11,7 +11,7 @@
 <left>
 <h1>UIManagement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1FuxBCjOiFzW7ntO8x1P_bdE4eXyfcDDg')">Download</button>
-<h1>Version 14:</h1>
+<h1>Version 15:</h1>
 This script is used to override aspects of some objects in UI canvas's and detect if a text object is a certain text, for the detecting, if they match, not, and/or none of the texts do, what will they do each
 <h1>Method names:</h1>
 Activate
@@ -81,13 +81,15 @@ public class UIManagement : MonoBehaviour
     public GameObject detectedObjectForPosition;
     public GameObject detectedObjectForRotation;
     public bool roundValues = true;
+
     [Header("Button actions")]
     public ButtonAction[] buttonActions;
     private void Update()
     {
+        if (Mouse.current == null) return;
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            Vector2 mousePos = Input.mousePosition;
+            Vector2 mousePos = Mouse.current.position.ReadValue();
             foreach (var action in buttonActions)
             {
                 if (IsButtonClicked(action.btnObject, mousePos))
@@ -101,6 +103,7 @@ public class UIManagement : MonoBehaviour
     {
         if (button == null || !button.gameObject.activeInHierarchy)
             return false;
+
         RectTransform rect = button.GetComponent<RectTransform>();
         Canvas canvas = button.GetComponentInParent<Canvas>();
         Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
@@ -112,13 +115,7 @@ public class UIManagement : MonoBehaviour
         {
             Image imageComponent = imageObject.GetComponent<Image>();
             if (imageComponent != null)
-            {
                 imageComponent.sprite = image;
-            }
-            else
-            {
-                Debug.LogWarning("No Image component found on ImageObject.");
-            }
         }
         GameObject positionObject = detectedObjectForPosition != null ? detectedObjectForPosition : gameObject;
         GameObject rotationObject = detectedObjectForRotation != null ? detectedObjectForRotation : gameObject;
@@ -187,9 +184,7 @@ public class UIManagement : MonoBehaviour
                     string timerName = timerMatch.Groups[1].Value;
                     var timerData = timerComponent.timers.Find(t => t.name == timerName);
                     if (timerData != null)
-                    {
                         currentText = currentText.Replace(fullTag, timerData.time);
-                    }
                 }
             }
         }
@@ -197,9 +192,7 @@ public class UIManagement : MonoBehaviour
         {
             var timeOfDayComponent = timeOfDayObject.GetComponent<TimeOfDay>();
             if (timeOfDayComponent != null && currentText.Contains("{time}"))
-            {
                 currentText = currentText.Replace("{time}", timeOfDayComponent.currentTime);
-            }
         }
         bool matchedAny = false;
         if (textObject != null)
@@ -213,59 +206,33 @@ public class UIManagement : MonoBehaviour
                     if (textInComponent == settings.expectedText)
                     {
                         matchedAny = true;
-                        if (settings.reachedComponent != null && !string.IsNullOrEmpty(settings.reachedMethod))
-                        {
-                            InvokeMethod(settings.reachedComponent, settings.reachedMethod);
-                        }
+                        InvokeMethod(settings.reachedComponent, settings.reachedMethod);
                     }
                     else
                     {
-                        if (settings.notReachedComponent != null && !string.IsNullOrEmpty(settings.notReachedMethod))
-                        {
-                            InvokeMethod(settings.notReachedComponent, settings.notReachedMethod);
-                        }
+                        InvokeMethod(settings.notReachedComponent, settings.notReachedMethod);
                     }
                 }
             }
         }
-        if (!matchedAny && defaultNotMatchedComponent != null && !string.IsNullOrEmpty(defaultNotMatchedMethod))
-        {
+        if (!matchedAny)
             InvokeMethod(defaultNotMatchedComponent, defaultNotMatchedMethod);
-        }
         if (overrideText && textObject != null)
         {
-            if (string.IsNullOrEmpty(currentText))
-            {
-                currentText = "";
-            }
             TMP_Text textComponent = textObject.GetComponent<TMP_Text>();
             if (textComponent != null)
             {
                 if (exponential)
-                {
                     StartCoroutine(ExponentialTextTyping(textComponent, currentText));
-                }
                 else
-                {
                     textComponent.text = currentText;
-                }
-            }
-            else
-            {
-                Debug.LogWarning("No TextMeshPro component found on TextObject.");
             }
         }
     }
     void InvokeMethod(MonoBehaviour component, string methodName)
     {
         if (component != null && !string.IsNullOrEmpty(methodName))
-        {
             component.Invoke(methodName, 0f);
-        }
-        else
-        {
-            Debug.LogWarning("Component or method name is invalid for invocation.");
-        }
     }
     IEnumerator ExponentialTextTyping(TMP_Text textComponent, string textToType)
     {
