@@ -11,10 +11,11 @@
 <left>
 <h1>CameraRotator.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1H1lw20c8D353fb4glPSr8IuRl5LtHKV5')">Download</button>
-<h1>Version 13:</h1>
+<h1>Version 14:</h1>
 This script is used to allow the camera to rotate in a 3D space with your mouse
 <h1>Method names:</h1>
-(There are none)
+UnlockCursor<br>
+LockCursor
 </left>
 <right>
 <textarea readonly>using System.Collections;
@@ -25,14 +26,14 @@ using UnityEngine.InputSystem;
 public class CameraRotator : MonoBehaviour
 {
     [Header("Client & player identifyer")]
-    public bool autoLockCursor = true;
-    public bool cursorLocked = false;
     public Transform playerBody;
-    [Header("Cursor actions")]
-    public MonoBehaviour onLockedComponent;
-    public string onLockedMethodName;
-    public MonoBehaviour onUnlockedComponent;
-    public string onUnlockedMethodName;
+    [Header("Cursor")]
+    public GameObject hudObject;
+    public bool autoLockCursor = true;
+    public bool leftClickLock = true;
+    public bool cursorLocked = false;
+    public GameControl GameControllerObject;
+    public float cursorUnlockedGameSpeed = 0f;
     [Header("Camera control")]
     public float mouseSensitivity = 100f;
     public bool lockDirectVertical = true;
@@ -51,14 +52,15 @@ public class CameraRotator : MonoBehaviour
     private Camera seeThroughCam;
     private Camera mainCamera;
     private bool lastCursorLockedState;
+    private float originalTimeSpeed;
     private void Start()
     {
+        originalTimeSpeed = GameControllerObject.timeSpeed;
         mouseSensitivity *= .75f;
         speed *= 10;
         if (autoLockCursor)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            LockCursor();
         }
         cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         lastCursorLockedState = cursorLocked;
@@ -99,29 +101,16 @@ public class CameraRotator : MonoBehaviour
     {
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            UnlockCursor();
         }
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && leftClickLock)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            LockCursor();
         }
         cursorLocked = Cursor.lockState == CursorLockMode.Locked;
         if (cursorLocked != lastCursorLockedState)
-        {
-            if (cursorLocked)
-            {
-                if (onLockedComponent != null && !string.IsNullOrEmpty(onLockedMethodName))
-                    onLockedComponent.SendMessage(onLockedMethodName, SendMessageOptions.DontRequireReceiver);
-            }
-            else
-            {
-                if (onUnlockedComponent != null && !string.IsNullOrEmpty(onUnlockedMethodName))
-                    onUnlockedComponent.SendMessage(onUnlockedMethodName, SendMessageOptions.DontRequireReceiver);
-            }
             lastCursorLockedState = cursorLocked;
-        }
+        hudObject.SetActive(!cursorLocked);
         if (!cursorLocked)
             return;
         Vector2 mouseDelta = Vector2.zero;
@@ -170,6 +159,17 @@ public class CameraRotator : MonoBehaviour
                 playerBody.rotation = Quaternion.Euler(0f, targetYaw, 0f);
             }
         }
+    }
+    public void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        GameControllerObject.timeSpeed = cursorUnlockedGameSpeed;
+    }
+    public void LockCursor() {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        GameControllerObject.timeSpeed = originalTimeSpeed;
     }
 }</textarea>
 </right>
