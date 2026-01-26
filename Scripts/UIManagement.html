@@ -11,7 +11,7 @@
 <left>
 <h1>UIManagement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1FuxBCjOiFzW7ntO8x1P_bdE4eXyfcDDg')">Download</button>
-<h1>Version 15:</h1>
+<h1>Version 16:</h1>
 This script is used to override aspects of some objects in UI canvas's and detect if a text object is a certain text, for the detecting, if they match, not, and/or none of the texts do, what will they do each
 <h1>Method names:</h1>
 Activate
@@ -41,6 +41,9 @@ using UnityEngine.InputSystem;
 
 public class UIManagement : MonoBehaviour
 {
+    [Header("Dyanmic scaling to canvas")]
+    public GameObject[] dynamicObjects;
+    public Canvas dynamicTo;
     [Header("Image Override Settings")]
     public bool overrideImage = false;
     public GameObject imageObject;
@@ -86,6 +89,27 @@ public class UIManagement : MonoBehaviour
     public ButtonAction[] buttonActions;
     private void Update()
     {
+float scaleMultiplier = 1f;
+
+#if UNITY_EDITOR
+        if (Application.isFocused)
+        {
+            scaleMultiplier = 1.75f;
+        }
+#endif
+        Vector2 screenSize = new Vector2(
+            Screen.width * scaleMultiplier,
+            Screen.height * scaleMultiplier
+        );
+
+        foreach (GameObject obj in dynamicObjects)
+        {
+            if (obj == null) continue;
+            RectTransform objRect = obj.GetComponent<RectTransform>();
+            if (objRect == null) continue;
+            objRect.sizeDelta = screenSize;
+            objRect.localScale = Vector3.one;
+        }
         if (Mouse.current == null) return;
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -103,7 +127,6 @@ public class UIManagement : MonoBehaviour
     {
         if (button == null || !button.gameObject.activeInHierarchy)
             return false;
-
         RectTransform rect = button.GetComponent<RectTransform>();
         Canvas canvas = button.GetComponentInParent<Canvas>();
         Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
