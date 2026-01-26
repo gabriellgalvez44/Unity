@@ -11,7 +11,7 @@
 <left>
 <h1>Performance.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=19p4UXLpPuEwpjzfsusnYLIQGcJ2XfLWK')">Download</button>
-<h1>Version 1:</h1>
+<h1>Version 2:</h1>
 This script is used to boost your game performance
 <h1>Method names:</h1>
 (There are none)
@@ -27,6 +27,7 @@ public class Performance : MonoBehaviour
     public float textureSwitchDistance = 50f;
     public bool useCulling = true;
     public bool useLOD = true;
+    public bool unrenderOutOfView = true;
     private Camera mainCam;
     void Start()
     {
@@ -59,6 +60,32 @@ public class Performance : MonoBehaviour
                 else
                 {
                     rend.material.mainTexture.mipMapBias = -1f;
+                }
+            }
+        }
+        if (unrenderOutOfView)
+        {
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(mainCam);
+            foreach (Terrain terrain in Terrain.activeTerrains)
+            {
+                if (!terrain || !terrain.terrainData) continue;
+                Bounds bounds = terrain.terrainData.bounds;
+                bounds.center += terrain.transform.position;
+                bool inView = GeometryUtility.TestPlanesAABB(planes, bounds);
+                float distance = Vector3.Distance(
+                    bounds.ClosestPoint(camPos),
+                    camPos
+                );
+                if (!inView || distance > textureSwitchDistance)
+                {
+                    terrain.detailObjectDistance = 0f;
+                    terrain.treeDistance = 0f;
+                }
+                else
+                {
+                    float t = 1f - Mathf.Clamp01(distance / textureSwitchDistance);
+                    terrain.detailObjectDistance = Mathf.Lerp(0f, textureSwitchDistance, t);
+                    terrain.treeDistance = Mathf.Lerp(0f, textureSwitchDistance * 1.5f, t);
                 }
             }
         }
