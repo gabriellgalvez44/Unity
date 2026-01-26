@@ -11,7 +11,7 @@
 <left>
 <h1>PlayerMovement.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1d8swOtqjk1MAse-dpjCyam07MxvZEDX1')">Download</button>
-<h1>Version 19:</h1>
+<h1>Version 20:</h1>
 This script is used to make an object considered the player and add keybinding controls for moving, advanced movement, and etc...
 <h1>Method names:</h1>
 (There are none)
@@ -29,10 +29,12 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Camera Identifier")]
     public Transform cameraTransform;
+    private bool isLocked = false;
     [Header("General settings")]
     public bool gravity = true;
     public bool stopExternalAccelleration = false;
     public bool rotationConstraints = true;
+    public float gravityScale = 1f;
     [Header("2D game settings")]
     public bool isGame2D = false;
     public bool stayInCameraBounds = false;
@@ -101,6 +103,19 @@ public class PlayerMovement : MonoBehaviour
     public bool dynamicImpulse = false;
     public float impulseMultiplier = 1f;
     public float objectMass = 1f;
+    [Header("Footsteps")]
+    public Terrain footstepTerrain;
+    public float stepDistance = 2f;
+    [System.Serializable]
+    public class StepSound
+    {
+        public TerrainLayer[] layers;
+        public AudioClip[] sounds;
+    }
+    public StepSound[] stepSounds;
+    private Vector3 lastStepPosition;
+    private AudioSource footstepAudioSource;
+    private bool isOnTerrain = false;
     [Header("Player event interactions")]
     [Header("On land behavior")]
     public MonoBehaviour landTargetComponent;
@@ -121,6 +136,55 @@ public class PlayerMovement : MonoBehaviour
     private bool stored2 = false;
     private bool grounded = false;
     private bool hasAirDashed = false;
+    private void InitializeFootsteps()
+    {
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+            footstepAudioSource.spatialBlend = 1f;
+        }
+        lastStepPosition = transform.position;
+    }
+    private void HandleFootsteps()
+    {
+        if (!isOnTerrain || footstepTerrain == null || stepSounds.Length == 0) return;
+        float distanceMoved = Vector3.Distance(transform.position, lastStepPosition);
+        if (distanceMoved < stepDistance) return;
+        TerrainData data = footstepTerrain.terrainData;
+        Vector3 terrainPos = transform.position - footstepTerrain.transform.position;
+        float normX = Mathf.Clamp01(terrainPos.x / data.size.x);
+        float normZ = Mathf.Clamp01(terrainPos.z / data.size.z);
+        int alphaX = Mathf.FloorToInt(normX * data.alphamapWidth);
+        int alphaZ = Mathf.FloorToInt(normZ * data.alphamapHeight);
+        float[,,] alphaMaps = data.GetAlphamaps(alphaX, alphaZ, 1, 1);
+        float maxWeight = 0f;
+        int dominantLayer = 0;
+        for (int i = 0; i < alphaMaps.GetLength(2); i++)
+        {
+            if (alphaMaps[0, 0, i] > maxWeight)
+            {
+                maxWeight = alphaMaps[0, 0, i];
+                dominantLayer = i;
+            }
+        }
+        TerrainLayer currentLayer = data.terrainLayers[dominantLayer];
+        foreach (StepSound step in stepSounds)
+        {
+            if (step.layers != null && step.layers.Length > 0)
+            {
+                foreach (var layer in step.layers)
+                {
+                    if (layer == currentLayer && step.sounds.Length > 0)
+                    {
+                        AudioClip clip = step.sounds[Random.Range(0, step.sounds.Length)];
+                        footstepAudioSource.PlayOneShot(clip);
+                        break;
+                    }
+                }
+            }
+        }
+        lastStepPosition = transform.position;
+    }
     private void Awake()
     {
         rb = gameObject.AddComponent<Rigidbody>();
@@ -136,6 +200,7 @@ public class PlayerMovement : MonoBehaviour
         originalSprintSpeed = sprintingSpeed;
         originalPosition = transform.position;
         ResetAirJumps();
+        InitializeFootsteps();
     }
     private void ResetAirJumps()
     {
@@ -143,6 +208,8 @@ public class PlayerMovement : MonoBehaviour
     }
     private void Update()
     {
+        rb.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
+        isLocked = cameraTransform.GetComponent<CameraRotator>().cursorLocked;
         statCreator = statObject.GetComponent<StatCreator>();
         foreach (var stat in statCreator.stats)
         {
@@ -170,11 +237,12 @@ public class PlayerMovement : MonoBehaviour
             sprintingSpeed = speed;
             stored3 = true;
         }
-        if (gravity && allowJump)
+        if (gravity && allowJump && isLocked)
         {
             HandleJump();
         }
-        HandleDash();
+        if (isLocked)
+            HandleDash();
         if (staminaStatRef == null)
         {
             stamina = 100;
@@ -184,6 +252,7 @@ public class PlayerMovement : MonoBehaviour
         {
             stamina = staminaStatRef.intValue;
         }
+        HandleFootsteps();
     }
     void FixedUpdate()
     {
@@ -210,7 +279,8 @@ public class PlayerMovement : MonoBehaviour
                 rb.linearVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
             }
         }
-        HandleMovement();
+        if (isLocked)
+            HandleMovement();
         if (!IsGrounded())
         {
             grounded = false;
@@ -398,7 +468,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveHorizontal -= 1f;
                 if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveHorizontal += 1f;
-
                 if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveVertical += 1f;
                 if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveVertical -= 1f;
             }
@@ -655,12 +724,20 @@ public class PlayerMovement : MonoBehaviour
             Vector3 impulse = direction * (speed * impulseMultiplier / targetMass);
             collision.rigidbody.AddForce(impulse, ForceMode.Impulse);
         }
+        if (collision.collider.gameObject == footstepTerrain.gameObject)
+        {
+            isOnTerrain = true;
+        }
     }
     private void OnCollisionExit(Collision collision)
     {
         if (isWallRunning && IsWallRunnable(collision))
         {
             StopWallRunning();
+        }
+        if (collision.collider.gameObject == footstepTerrain.gameObject)
+        {
+            isOnTerrain = false;
         }
     }
     private bool IsWallRunnable(Collision collision)
@@ -706,6 +783,13 @@ public class PlayerMovement : MonoBehaviour
                 yield break;
             }
             yield return new WaitForSeconds(delay);
+        }
+    }
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.collider.gameObject == footstepTerrain.gameObject)
+        {
+            isOnTerrain = true;
         }
     }
 }</textarea>
