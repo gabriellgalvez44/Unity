@@ -11,7 +11,7 @@
 <left>
 <h1>TimeOfDay.cs</h1>
 <button onclick="window.open('https://drive.google.com/uc?export=download&id=1BpFVyec7t3qB_l8vjkQY-Vr1Q0AXrs-f')">Download</button>
-<h1>Version 4:</h1>
+<h1>Version 3:</h1>
 This script is used to add daylight cycling to your game for better immersion and/or detail
 <h1>Method names:</h1>
 (There are none)
@@ -36,7 +36,6 @@ public class TimeOfDay : MonoBehaviour
     public bool militaryTime;
     private float currentTimeInSeconds;
     float dayLengthSeconds;
-    public bool nigthEcho = true;
     void Start()
     {
         dayLengthSeconds = ParseFlexibleTime(dayLength);
@@ -66,28 +65,6 @@ public class TimeOfDay : MonoBehaviour
         }
         UpdateCurrentTimeString();
         UpdateLight();
-        if (nigthEcho)
-        {
-            float nightStart = 18 * 3600f;
-            float nightEnd = 6 * 3600f;
-            bool isNight = currentTimeInSeconds >= nightStart || currentTimeInSeconds < nightEnd;
-            if (isNight)
-            {
-                float distanceFromMidnight = Mathf.Min(Mathf.Abs(currentTimeInSeconds - 0f), Mathf.Abs(currentTimeInSeconds - 86400f));
-                float echoAmount = 1f - Mathf.Clamp01(distanceFromMidnight / (6f * 3600f));
-                foreach (AudioSource source in FindObjectsOfType<AudioSource>())
-                {
-                    if (source != null)
-                    {
-                        var reverb = source.GetComponent<AudioReverbFilter>();
-                        if (reverb == null) reverb = source.gameObject.AddComponent<AudioReverbFilter>();
-                        reverb.reverbPreset = AudioReverbPreset.Generic;
-                        reverb.dryLevel = -10000;
-                        reverb.room = Mathf.Lerp(-10000, 0, echoAmount);
-                    }
-                }
-            }
-        }
     }
     void UpdateCurrentTimeString()
     {
